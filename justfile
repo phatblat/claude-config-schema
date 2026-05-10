@@ -1,8 +1,8 @@
 # claude-config-schema
 
 # List available recipes
-default:
-    @just --list
+@_default:
+    just --list
 
 # --------------------------------------------------------------------------- #
 # Setup
