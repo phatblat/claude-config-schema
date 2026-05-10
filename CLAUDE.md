@@ -18,6 +18,7 @@ just lint              # Type-check tooling TypeScript (tsc --noEmit)
 just lint-schemas      # Validate JSON Schema files with AJV
 just clean             # Remove generated type files and caches
 just format            # Auto-format justfile and TypeScript tooling
+just install           # Install Node dependencies (npm ci)
 ```
 
 ## Architecture
