@@ -59,6 +59,11 @@ See [SPEC.md](SPEC.md) for the full design document.
 | Python | PyPI | `claude-code-config` |
 | Rust | crates.io | `claude-code-config` |
 
+## Related tools
+
+- [claude-md-management](https://github.com/anthropics/claude-code-plugin-claude-md-management) — Claude Code plugin for auditing and improving CLAUDE.md files
+- [Gantry](https://github.com/phatblat/gantry) — Claude Code config management tool (primary consumer of these schemas)
+
 ## License
 
 MIT License. See [LICENSE.md](LICENSE.md).
