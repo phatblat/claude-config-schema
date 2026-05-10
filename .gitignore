@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+*.tgz
+
+# Generated binding build artifacts
+generated/ts/package-lock.json
+
+# Python build artifacts
+__pycache__/
+*.egg-info/
+
+# Rust build artifacts
+generated/rust/target/
+generated/rust/Cargo.lock

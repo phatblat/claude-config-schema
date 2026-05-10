@@ -1,0 +1,16 @@
+{
+  "settings.json": [
+    {
+      "version": "2.1.138",
+      "hash": "d2d192a072ef53dbb8419b502d60bdc8364e8e43f5129ac93105e6677e274a81",
+      "fetchedAt": "2026-05-10T15:03:02.802Z"
+    }
+  ],
+  "plugin-manifest.json": [
+    {
+      "version": "2.1.138",
+      "hash": "3f69938d71a47a72fa60050b2050dd620054708911defc1c1dcd7188dcb169f5",
+      "fetchedAt": "2026-05-10T15:03:02.932Z"
+    }
+  ]
+}

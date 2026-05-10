@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-code-config"
+version = "0.0.0"
+description = "Python types for Claude Code configuration surfaces"
+requires-python = ">=3.10"
+license = "MIT"
+
+[tool.setuptools.packages.find]
+include = ["claude_config*"]

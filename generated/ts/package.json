@@ -1,0 +1,19 @@
+{
+  "name": "@phatblat/claude-code-config",
+  "version": "0.0.0",
+  "description": "TypeScript types for Claude Code configuration surfaces",
+  "type": "module",
+  "main": "dist/types.js",
+  "types": "dist/types.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "license": "MIT"
+}
