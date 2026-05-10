@@ -61,6 +61,7 @@ See [SPEC.md](SPEC.md) for the full design document.
 
 ## Related tools
 
+- [claude-code-setup](https://github.com/anthropics/claude-code-plugin-claude-code-setup) — Claude Code plugin for analyzing codebases and recommending automations (hooks, subagents, skills, MCP servers)
 - [claude-md-management](https://github.com/anthropics/claude-code-plugin-claude-md-management) — Claude Code plugin for auditing and improving CLAUDE.md files
 - [Gantry](https://github.com/phatblat/gantry) — Claude Code config management tool (primary consumer of these schemas)
 
