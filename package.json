@@ -1,0 +1,27 @@
+{
+  "name": "claude-config-schema-tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tooling for claude-config-schema: upstream sync, binding generation, validation",
+  "type": "module",
+  "scripts": {
+    "sync-upstream": "tsx tools/sync-upstream.ts",
+    "detect-version": "tsx tools/detect-cc-version.ts",
+    "generate": "tsx tools/generate-bindings.ts",
+    "validate": "tsx tools/validate-examples.ts",
+    "check-drift": "tsx tools/check-drift.ts",
+    "lint:schemas": "tsx tools/lint-schemas.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "json-schema-ref-parser": "^9.0.9",
+    "quicktype-core": "^23.0.170",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

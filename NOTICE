@@ -1,0 +1,13 @@
+claude-config-schema
+Copyright 2026 Ben Chatelain
+
+This product includes schemas mirrored from external sources:
+
+- settings.json: Mirrored from https://json.schemastore.org/claude-code-settings.json
+  Published by Anthropic. Licensed under the SchemaStore project terms.
+
+- plugin-manifest.json: Mirrored from https://json.schemastore.org/claude-code-plugin-manifest.json
+  Published by Anthropic. Licensed under the SchemaStore project terms.
+
+Upstream schemas in the upstream/ directory are reproduced unmodified.
+See each schema's $id and description fields for original source attribution.

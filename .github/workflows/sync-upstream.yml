@@ -1,0 +1,44 @@
+name: Sync Upstream Schemas
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Detect Claude Code version
+        id: version
+        run: npm run detect-version
+
+      - name: Sync upstream schemas
+        run: npm run sync-upstream
+
+      - name: Regenerate bindings
+        run: npm run generate
+
+      - name: Create PR if changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "chore: sync upstream schemas"
+          body: |
+            Automated upstream schema sync.
+            Claude Code version: ${{ steps.version.outputs.version }}
+          branch: chore/sync-upstream
+          commit-message: "chore: sync upstream schemas"
+          labels: upstream-sync

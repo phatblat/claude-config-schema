@@ -1,0 +1,78 @@
+name: Validate PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint:schemas
+
+  validate-examples:
+    runs-on: ubuntu-latest
+    needs: lint-schemas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run validate
+
+  check-drift:
+    runs-on: ubuntu-latest
+    needs: lint-schemas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run check-drift
+
+  build-go:
+    runs-on: ubuntu-latest
+    needs: check-drift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - run: cd generated/go && go build ./...
+
+  build-ts:
+    runs-on: ubuntu-latest
+    needs: check-drift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: cd generated/ts && npm ci && npx tsc --noEmit
+
+  build-python:
+    runs-on: ubuntu-latest
+    needs: check-drift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: cd generated/python && pip install -e . && python -c "import claude_config"
+
+  build-rust:
+    runs-on: ubuntu-latest
+    needs: check-drift
+    steps:
+      - uses: actions/checkout@v4
+      - run: cd generated/rust && cargo check
