@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/phatblat/claude-config-schema/authored/mcp-config.json",
+  "title": "Claude Code .mcp.json",
+  "description": "Project-scoped MCP server configuration (.mcp.json). Source: https://code.claude.com/docs/en/mcp#project-scope",
+  "type": "object",
+  "properties": {
+    "mcpServers": {
+      "type": "object",
+      "description": "Map of MCP server names to their configurations.",
+      "additionalProperties": {
+        "$ref": "#/$defs/mcpServer"
+      }
+    }
+  },
+  "required": ["mcpServers"],
+  "additionalProperties": false,
+  "$defs": {
+    "mcpServer": {
+      "type": "object",
+      "description": "MCP server configuration. Exactly one transport must be specified: stdio (command), http/sse/ws (url).",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Transport type. 'streamable-http' is accepted as an alias for 'http'.",
+          "enum": ["stdio", "http", "streamable-http", "sse", "ws"]
+        },
+        "command": {
+          "type": "string",
+          "description": "Executable to run for stdio servers. Supports ${VAR} environment variable expansion."
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Command-line arguments for stdio servers. Supports ${VAR} expansion."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default} expansion."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL for http, sse, or ws servers. Supports ${VAR} expansion.",
+          "format": "uri"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "HTTP headers for remote servers. Supports ${VAR} expansion for values."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -2,10 +2,13 @@
 
 // To parse this data:
 //
-//   import { Convert, ClaudeCodePluginManifest, ClaudeCodeSettings } from "./file";
+//   import { Convert, ClaudeCodePluginManifest, ClaudeCodeSettings, ClaudeCodeAgentFrontmatter, ClaudeCodeMCPJSON, ClaudeCodeSkillFrontmatter } from "./file";
 //
 //   const claudeCodePluginManifest = Convert.toClaudeCodePluginManifest(json);
 //   const claudeCodeSettings = Convert.toClaudeCodeSettings(json);
+//   const claudeCodeAgentFrontmatter = Convert.toClaudeCodeAgentFrontmatter(json);
+//   const claudeCodeMCPJSON = Convert.toClaudeCodeMCPJSON(json);
+//   const claudeCodeSkillFrontmatter = Convert.toClaudeCodeSkillFrontmatter(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
@@ -53,7 +56,7 @@ export interface ClaudeCodePluginManifest {
      */
     license?:    string;
     lspServers?: Array<{ [key: string]: LspServerLspServer } | string> | { [key: string]: LspServersLspServerClass } | string;
-    mcpServers?: Array<{ [key: string]: MCPServerMCPServer } | string> | { [key: string]: MCPServersMCPServerObject } | string;
+    mcpServers?: Array<{ [key: string]: PurpleMCPServer } | string> | { [key: string]: FluffyMCPServer } | string;
     /**
      * Background watch scripts the host arms as persistent Monitor tasks (unsandboxed, same
      * trust tier as hooks) so plugins need not instruct the model to arm them. When omitted,
@@ -337,6 +340,8 @@ export interface FluffyHook {
  *
  * Shell interpreter for the command. "bash" uses the login shell (bash/zsh/sh);
  * "powershell" uses pwsh. Defaults to bash.
+ *
+ * Shell to use for !`command` and ```! blocks in this skill.
  */
 export enum Shell {
     Bash = "bash",
@@ -578,11 +583,11 @@ export interface LspServersLspServerClass {
     workspaceFolder?: string;
 }
 
-export interface MCPServerMCPServer {
+export interface PurpleMCPServer {
     args?:          string[];
     command?:       string;
     env?:           { [key: string]: string };
-    type?:          MCPServerType;
+    type?:          PurpleType;
     headers?:       { [key: string]: string };
     headersHelper?: string;
     oauth?:         PurpleOauth;
@@ -599,18 +604,18 @@ export interface PurpleOauth {
     [property: string]: any;
 }
 
-export enum MCPServerType {
+export enum PurpleType {
     HTTP = "http",
     SSE = "sse",
     Stdio = "stdio",
     Ws = "ws",
 }
 
-export interface MCPServersMCPServerObject {
+export interface FluffyMCPServer {
     args?:          string[];
     command?:       string;
     env?:           { [key: string]: string };
-    type?:          MCPServerType;
+    type?:          PurpleType;
     headers?:       { [key: string]: string };
     headersHelper?: string;
     oauth?:         FluffyOauth;
@@ -886,7 +891,7 @@ export interface ClaudeCodeSettings {
      * to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment
      * variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level
      */
-    effortLevel?: EffortLevel;
+    effortLevel?: Effort;
     /**
      * Whether to automatically approve all MCP servers in the project. See
      * https://code.claude.com/docs/en/mcp
@@ -1356,8 +1361,12 @@ export enum Disable {
  * The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto
  * to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment
  * variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level
+ *
+ * Effort level when this subagent is active. Overrides the session effort level.
+ *
+ * Effort level when this skill is active. Overrides the session effort level.
  */
-export enum EffortLevel {
+export enum Effort {
     High = "high",
     Low = "low",
     Max = "max",
@@ -2949,6 +2958,278 @@ export interface Worktree {
     sparsePaths?: string[];
 }
 
+/**
+ * YAML frontmatter for subagent .md files. Source:
+ * https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields
+ */
+export interface ClaudeCodeAgentFrontmatter {
+    /**
+     * Set to true to always run this subagent as a background task.
+     */
+    background?: boolean;
+    /**
+     * Display color for the subagent in the task list and transcript.
+     */
+    color?: Color;
+    /**
+     * When Claude should delegate to this subagent.
+     */
+    description: string;
+    /**
+     * Tools to deny, removed from inherited or specified list.
+     */
+    disallowedTools?: string[] | string;
+    /**
+     * Effort level when this subagent is active. Overrides the session effort level.
+     */
+    effort?: Effort;
+    /**
+     * Lifecycle hooks scoped to this subagent. Ignored for plugin subagents.
+     */
+    hooks?: { [key: string]: any };
+    /**
+     * Auto-submitted as the first user turn when this agent runs as the main session agent (via
+     * --agent or the agent setting). Commands and skills are processed.
+     */
+    initialPrompt?: string;
+    /**
+     * Set to 'worktree' to run in a temporary git worktree.
+     */
+    isolation?: Isolation;
+    /**
+     * Maximum number of agentic turns before the subagent stops.
+     */
+    maxTurns?: number;
+    /**
+     * MCP servers available to this subagent. Each entry is a server name string or an inline
+     * definition object. Ignored for plugin subagents.
+     */
+    mcpServers?: Array<{ [key: string]: TentacledMCPServer } | string> | { [key: string]: StickyMCPServer };
+    /**
+     * Persistent memory scope. Enables cross-session learning.
+     */
+    memory?: Memory;
+    /**
+     * Model to use: 'sonnet', 'opus', 'haiku', a full model ID (e.g. 'claude-opus-4-7'), or
+     * 'inherit'. Defaults to 'inherit'.
+     */
+    model?: string;
+    /**
+     * Unique identifier using lowercase letters and hyphens.
+     */
+    name: string;
+    /**
+     * Permission mode for the subagent. Ignored for plugin subagents.
+     */
+    permissionMode?: PermissionMode;
+    /**
+     * Skills to preload into the subagent's context at startup.
+     */
+    skills?: string[] | string;
+    /**
+     * Tools the subagent can use. Inherits all tools if omitted.
+     */
+    tools?: string[] | string;
+}
+
+/**
+ * Display color for the subagent in the task list and transcript.
+ */
+export enum Color {
+    Blue = "blue",
+    Cyan = "cyan",
+    Green = "green",
+    Orange = "orange",
+    Pink = "pink",
+    Purple = "purple",
+    Red = "red",
+    Yellow = "yellow",
+}
+
+/**
+ * Set to 'worktree' to run in a temporary git worktree.
+ */
+export enum Isolation {
+    Worktree = "worktree",
+}
+
+export interface TentacledMCPServer {
+    args?:    string[];
+    command?: string;
+    env?:     { [key: string]: string };
+    type?:    PurpleType;
+    url?:     string;
+    [property: string]: any;
+}
+
+export interface StickyMCPServer {
+    args?:    string[];
+    command?: string;
+    env?:     { [key: string]: string };
+    type?:    PurpleType;
+    url?:     string;
+    [property: string]: any;
+}
+
+/**
+ * Persistent memory scope. Enables cross-session learning.
+ */
+export enum Memory {
+    Local = "local",
+    Project = "project",
+    User = "user",
+}
+
+/**
+ * Permission mode for the subagent. Ignored for plugin subagents.
+ */
+export enum PermissionMode {
+    AcceptEdits = "acceptEdits",
+    Auto = "auto",
+    BypassPermissions = "bypassPermissions",
+    Default = "default",
+    DontAsk = "dontAsk",
+    Plan = "plan",
+}
+
+/**
+ * Project-scoped MCP server configuration (.mcp.json). Source:
+ * https://code.claude.com/docs/en/mcp#project-scope
+ */
+export interface ClaudeCodeMCPJSON {
+    /**
+     * Map of MCP server names to their configurations.
+     */
+    mcpServers: { [key: string]: MCPConfi };
+}
+
+/**
+ * MCP server configuration. Exactly one transport must be specified: stdio (command),
+ * http/sse/ws (url).
+ */
+export interface MCPConfi {
+    /**
+     * Command-line arguments for stdio servers. Supports ${VAR} expansion.
+     */
+    args?: string[];
+    /**
+     * Executable to run for stdio servers. Supports ${VAR} environment variable expansion.
+     */
+    command?: string;
+    /**
+     * Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}
+     * expansion.
+     */
+    env?: { [key: string]: string };
+    /**
+     * HTTP headers for remote servers. Supports ${VAR} expansion for values.
+     */
+    headers?: { [key: string]: string };
+    /**
+     * Transport type. 'streamable-http' is accepted as an alias for 'http'.
+     */
+    type?: FluffyType;
+    /**
+     * URL for http, sse, or ws servers. Supports ${VAR} expansion.
+     */
+    url?: string;
+}
+
+/**
+ * Transport type. 'streamable-http' is accepted as an alias for 'http'.
+ */
+export enum FluffyType {
+    HTTP = "http",
+    SSE = "sse",
+    Stdio = "stdio",
+    StreamableHTTP = "streamable-http",
+    Ws = "ws",
+}
+
+/**
+ * YAML frontmatter for SKILL.md files. Source:
+ * https://code.claude.com/docs/en/skills#frontmatter-reference
+ */
+export interface ClaudeCodeSkillFrontmatter {
+    /**
+     * Which subagent type to use when context: fork is set. Options include built-in agents
+     * (Explore, Plan, general-purpose) or any custom subagent.
+     */
+    agent?: string;
+    /**
+     * Tools Claude can use without asking permission when this skill is active.
+     */
+    "allowed-tools"?: string[] | string;
+    /**
+     * Hint shown during autocomplete to indicate expected arguments. Example: '[issue-number]'
+     * or '[filename] [format]'.
+     */
+    "argument-hint"?: string;
+    /**
+     * Named positional arguments for $name substitution in the skill content.
+     */
+    arguments?: string[] | string;
+    /**
+     * Set to 'fork' to run in a forked subagent context.
+     */
+    context?: Context;
+    /**
+     * What the skill does and when to use it. Claude uses this to decide when to apply the
+     * skill. Combined with when_to_use, truncated at 1,536 characters in the skill listing.
+     */
+    description?: string;
+    /**
+     * Set to true to prevent Claude from automatically loading this skill. Use for workflows
+     * you want to trigger manually with /name.
+     */
+    "disable-model-invocation"?: boolean;
+    /**
+     * Effort level when this skill is active. Overrides the session effort level.
+     */
+    effort?: Effort;
+    /**
+     * Hooks scoped to this skill's lifecycle. See
+     * https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents
+     */
+    hooks?: { [key: string]: any };
+    /**
+     * Model to use when this skill is active. Accepts the same values as /model, or 'inherit'
+     * to keep the active model.
+     */
+    model?: string;
+    /**
+     * Display name for the skill. If omitted, uses the directory name. Lowercase letters,
+     * numbers, and hyphens only (max 64 characters).
+     */
+    name?: string;
+    /**
+     * Glob patterns that limit when this skill is activated. When set, Claude loads the skill
+     * automatically only when working with files matching the patterns.
+     */
+    paths?: string[] | string;
+    /**
+     * Shell to use for !`command` and ```! blocks in this skill.
+     */
+    shell?: Shell;
+    /**
+     * Set to false to hide from the / menu. Use for background knowledge users shouldn't invoke
+     * directly.
+     */
+    "user-invocable"?: boolean;
+    /**
+     * Additional context for when Claude should invoke the skill, such as trigger phrases or
+     * example requests. Appended to description in the skill listing.
+     */
+    when_to_use?: string;
+}
+
+/**
+ * Set to 'fork' to run in a forked subagent context.
+ */
+export enum Context {
+    Fork = "fork",
+}
+
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
@@ -2966,6 +3247,30 @@ export class Convert {
 
     public static claudeCodeSettingsToJson(value: ClaudeCodeSettings): string {
         return JSON.stringify(uncast(value, r("ClaudeCodeSettings")), null, 2);
+    }
+
+    public static toClaudeCodeAgentFrontmatter(json: string): ClaudeCodeAgentFrontmatter {
+        return cast(JSON.parse(json), r("ClaudeCodeAgentFrontmatter"));
+    }
+
+    public static claudeCodeAgentFrontmatterToJson(value: ClaudeCodeAgentFrontmatter): string {
+        return JSON.stringify(uncast(value, r("ClaudeCodeAgentFrontmatter")), null, 2);
+    }
+
+    public static toClaudeCodeMCPJSON(json: string): ClaudeCodeMCPJSON {
+        return cast(JSON.parse(json), r("ClaudeCodeMCPJSON"));
+    }
+
+    public static claudeCodeMCPJSONToJson(value: ClaudeCodeMCPJSON): string {
+        return JSON.stringify(uncast(value, r("ClaudeCodeMCPJSON")), null, 2);
+    }
+
+    public static toClaudeCodeSkillFrontmatter(json: string): ClaudeCodeSkillFrontmatter {
+        return cast(JSON.parse(json), r("ClaudeCodeSkillFrontmatter"));
+    }
+
+    public static claudeCodeSkillFrontmatterToJson(value: ClaudeCodeSkillFrontmatter): string {
+        return JSON.stringify(uncast(value, r("ClaudeCodeSkillFrontmatter")), null, 2);
     }
 }
 
@@ -3135,7 +3440,7 @@ const typeMap: any = {
         { json: "keywords", js: "keywords", typ: u(undefined, a("")) },
         { json: "license", js: "license", typ: u(undefined, "") },
         { json: "lspServers", js: "lspServers", typ: u(undefined, u(a(u(m(r("LspServerLspServer")), "")), m(r("LspServersLspServerClass")), "")) },
-        { json: "mcpServers", js: "mcpServers", typ: u(undefined, u(a(u(m(r("MCPServerMCPServer")), "")), m(r("MCPServersMCPServerObject")), "")) },
+        { json: "mcpServers", js: "mcpServers", typ: u(undefined, u(a(u(m(r("PurpleMCPServer")), "")), m(r("FluffyMCPServer")), "")) },
         { json: "monitors", js: "monitors", typ: u(undefined, u(a(r("Monitor")), "")) },
         { json: "name", js: "name", typ: "" },
         { json: "outputStyles", js: "outputStyles", typ: u(undefined, u(a(""), "")) },
@@ -3253,11 +3558,11 @@ const typeMap: any = {
         { json: "transport", js: "transport", typ: u(undefined, r("Transport")) },
         { json: "workspaceFolder", js: "workspaceFolder", typ: u(undefined, "") },
     ], false),
-    "MCPServerMCPServer": o([
+    "PurpleMCPServer": o([
         { json: "args", js: "args", typ: u(undefined, a("")) },
         { json: "command", js: "command", typ: u(undefined, "") },
         { json: "env", js: "env", typ: u(undefined, m("")) },
-        { json: "type", js: "type", typ: u(undefined, r("MCPServerType")) },
+        { json: "type", js: "type", typ: u(undefined, r("PurpleType")) },
         { json: "headers", js: "headers", typ: u(undefined, m("")) },
         { json: "headersHelper", js: "headersHelper", typ: u(undefined, "") },
         { json: "oauth", js: "oauth", typ: u(undefined, r("PurpleOauth")) },
@@ -3270,11 +3575,11 @@ const typeMap: any = {
         { json: "scopes", js: "scopes", typ: u(undefined, "") },
         { json: "xaa", js: "xaa", typ: u(undefined, true) },
     ], "any"),
-    "MCPServersMCPServerObject": o([
+    "FluffyMCPServer": o([
         { json: "args", js: "args", typ: u(undefined, a("")) },
         { json: "command", js: "command", typ: u(undefined, "") },
         { json: "env", js: "env", typ: u(undefined, m("")) },
-        { json: "type", js: "type", typ: u(undefined, r("MCPServerType")) },
+        { json: "type", js: "type", typ: u(undefined, r("PurpleType")) },
         { json: "headers", js: "headers", typ: u(undefined, m("")) },
         { json: "headersHelper", js: "headersHelper", typ: u(undefined, "") },
         { json: "oauth", js: "oauth", typ: u(undefined, r("FluffyOauth")) },
@@ -3334,7 +3639,7 @@ const typeMap: any = {
         { json: "disableDeepLinkRegistration", js: "disableDeepLinkRegistration", typ: u(undefined, r("Disable")) },
         { json: "disabledMcpjsonServers", js: "disabledMcpjsonServers", typ: u(undefined, a("")) },
         { json: "disableSkillShellExecution", js: "disableSkillShellExecution", typ: u(undefined, true) },
-        { json: "effortLevel", js: "effortLevel", typ: u(undefined, r("EffortLevel")) },
+        { json: "effortLevel", js: "effortLevel", typ: u(undefined, r("Effort")) },
         { json: "enableAllProjectMcpServers", js: "enableAllProjectMcpServers", typ: u(undefined, true) },
         { json: "enabledMcpjsonServers", js: "enabledMcpjsonServers", typ: u(undefined, a("")) },
         { json: "enabledPlugins", js: "enabledPlugins", typ: u(undefined, m("any")) },
@@ -3711,6 +4016,66 @@ const typeMap: any = {
     "Worktree": o([
         { json: "sparsePaths", js: "sparsePaths", typ: u(undefined, a("")) },
     ], false),
+    "ClaudeCodeAgentFrontmatter": o([
+        { json: "background", js: "background", typ: u(undefined, true) },
+        { json: "color", js: "color", typ: u(undefined, r("Color")) },
+        { json: "description", js: "description", typ: "" },
+        { json: "disallowedTools", js: "disallowedTools", typ: u(undefined, u(a(""), "")) },
+        { json: "effort", js: "effort", typ: u(undefined, r("Effort")) },
+        { json: "hooks", js: "hooks", typ: u(undefined, m("any")) },
+        { json: "initialPrompt", js: "initialPrompt", typ: u(undefined, "") },
+        { json: "isolation", js: "isolation", typ: u(undefined, r("Isolation")) },
+        { json: "maxTurns", js: "maxTurns", typ: u(undefined, 0) },
+        { json: "mcpServers", js: "mcpServers", typ: u(undefined, u(a(u(m(r("TentacledMCPServer")), "")), m(r("StickyMCPServer")))) },
+        { json: "memory", js: "memory", typ: u(undefined, r("Memory")) },
+        { json: "model", js: "model", typ: u(undefined, "") },
+        { json: "name", js: "name", typ: "" },
+        { json: "permissionMode", js: "permissionMode", typ: u(undefined, r("PermissionMode")) },
+        { json: "skills", js: "skills", typ: u(undefined, u(a(""), "")) },
+        { json: "tools", js: "tools", typ: u(undefined, u(a(""), "")) },
+    ], false),
+    "TentacledMCPServer": o([
+        { json: "args", js: "args", typ: u(undefined, a("")) },
+        { json: "command", js: "command", typ: u(undefined, "") },
+        { json: "env", js: "env", typ: u(undefined, m("")) },
+        { json: "type", js: "type", typ: u(undefined, r("PurpleType")) },
+        { json: "url", js: "url", typ: u(undefined, "") },
+    ], "any"),
+    "StickyMCPServer": o([
+        { json: "args", js: "args", typ: u(undefined, a("")) },
+        { json: "command", js: "command", typ: u(undefined, "") },
+        { json: "env", js: "env", typ: u(undefined, m("")) },
+        { json: "type", js: "type", typ: u(undefined, r("PurpleType")) },
+        { json: "url", js: "url", typ: u(undefined, "") },
+    ], "any"),
+    "ClaudeCodeMCPJSON": o([
+        { json: "mcpServers", js: "mcpServers", typ: m(r("MCPConfi")) },
+    ], false),
+    "MCPConfi": o([
+        { json: "args", js: "args", typ: u(undefined, a("")) },
+        { json: "command", js: "command", typ: u(undefined, "") },
+        { json: "env", js: "env", typ: u(undefined, m("")) },
+        { json: "headers", js: "headers", typ: u(undefined, m("")) },
+        { json: "type", js: "type", typ: u(undefined, r("FluffyType")) },
+        { json: "url", js: "url", typ: u(undefined, "") },
+    ], false),
+    "ClaudeCodeSkillFrontmatter": o([
+        { json: "agent", js: "agent", typ: u(undefined, "") },
+        { json: "allowed-tools", js: "allowed-tools", typ: u(undefined, u(a(""), "")) },
+        { json: "argument-hint", js: "argument-hint", typ: u(undefined, "") },
+        { json: "arguments", js: "arguments", typ: u(undefined, u(a(""), "")) },
+        { json: "context", js: "context", typ: u(undefined, r("Context")) },
+        { json: "description", js: "description", typ: u(undefined, "") },
+        { json: "disable-model-invocation", js: "disable-model-invocation", typ: u(undefined, true) },
+        { json: "effort", js: "effort", typ: u(undefined, r("Effort")) },
+        { json: "hooks", js: "hooks", typ: u(undefined, m("any")) },
+        { json: "model", js: "model", typ: u(undefined, "") },
+        { json: "name", js: "name", typ: u(undefined, "") },
+        { json: "paths", js: "paths", typ: u(undefined, u(a(""), "")) },
+        { json: "shell", js: "shell", typ: u(undefined, r("Shell")) },
+        { json: "user-invocable", js: "user-invocable", typ: u(undefined, true) },
+        { json: "when_to_use", js: "when_to_use", typ: u(undefined, "") },
+    ], false),
     "UserConfigType": [
         "boolean",
         "directory",
@@ -3733,7 +4098,7 @@ const typeMap: any = {
         "socket",
         "stdio",
     ],
-    "MCPServerType": [
+    "PurpleType": [
         "http",
         "sse",
         "stdio",
@@ -3756,7 +4121,7 @@ const typeMap: any = {
     "Disable": [
         "disable",
     ],
-    "EffortLevel": [
+    "Effort": [
         "high",
         "low",
         "max",
@@ -3839,6 +4204,42 @@ const typeMap: any = {
         "default",
         "focus",
         "verbose",
+    ],
+    "Color": [
+        "blue",
+        "cyan",
+        "green",
+        "orange",
+        "pink",
+        "purple",
+        "red",
+        "yellow",
+    ],
+    "Isolation": [
+        "worktree",
+    ],
+    "Memory": [
+        "local",
+        "project",
+        "user",
+    ],
+    "PermissionMode": [
+        "acceptEdits",
+        "auto",
+        "bypassPermissions",
+        "default",
+        "dontAsk",
+        "plan",
+    ],
+    "FluffyType": [
+        "http",
+        "sse",
+        "stdio",
+        "streamable-http",
+        "ws",
+    ],
+    "Context": [
+        "fork",
     ],
 };
 
