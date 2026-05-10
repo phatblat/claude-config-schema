@@ -1,0 +1,14 @@
+{
+  "name": "code-review-helper",
+  "version": "1.2.0",
+  "description": "Automated code review with custom linting rules",
+  "author": {
+    "name": "Acme Dev Tools",
+    "email": "plugins@acme.example.com",
+    "url": "https://github.com/acme/code-review-helper"
+  },
+  "homepage": "https://github.com/acme/code-review-helper",
+  "repository": "https://github.com/acme/code-review-helper",
+  "license": "MIT",
+  "keywords": ["code-review", "linting", "quality"]
+}

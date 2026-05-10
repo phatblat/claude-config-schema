@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(yarn *)",
+      "Bash(git *)",
+      "Read",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch(domain:internal.example.com)"
+    ],
+    "deny": ["Bash(curl *)", "Bash(wget *)", "WebFetch"],
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": "disable",
+    "disableAutoMode": "disable"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/audit-log.py",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash hooks/check-compliance.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "allowedMcpServers": [
+    { "serverName": "github" },
+    { "serverUrl": "https://*.internal.example.com/*" }
+  ],
+  "deniedMcpServers": [{ "serverName": "filesystem" }],
+  "availableModels": ["sonnet", "haiku"],
+  "disableAllHooks": false
+}

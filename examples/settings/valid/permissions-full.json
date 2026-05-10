@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run test)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Read",
+      "Edit(/src/**/*.ts)",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./secrets/**)",
+      "Bash(rm -rf *)",
+      "Bash(curl *)"
+    ],
+    "ask": ["Bash(git commit *)", "Bash(git push *)", "Bash(gh pr create *)"],
+    "defaultMode": "default"
+  }
+}

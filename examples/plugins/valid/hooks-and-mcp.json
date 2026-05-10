@@ -1,0 +1,40 @@
+{
+  "name": "security-gates",
+  "version": "2.0.0",
+  "description": "Security validation hooks and scanning tools",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/check-command.sh",
+            "timeout": 5,
+            "statusMessage": "Checking command safety..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review the tool output for any leaked secrets or sensitive data. Output: $ARGUMENTS",
+            "model": "claude-haiku-4-5-20251001"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "scanner": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/scanner.js"],
+      "env": {
+        "SCAN_DEPTH": "3"
+      }
+    }
+  }
+}

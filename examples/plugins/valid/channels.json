@@ -1,0 +1,36 @@
+{
+  "name": "messaging-bridge",
+  "version": "1.0.0",
+  "description": "Bridge Claude Code to messaging platforms",
+  "channels": [
+    {
+      "server": "slack-bridge",
+      "displayName": "Slack",
+      "userConfig": {
+        "workspace_url": {
+          "type": "string",
+          "title": "Workspace URL",
+          "description": "Your Slack workspace URL (e.g., acme.slack.com)",
+          "required": true
+        },
+        "bot_token": {
+          "type": "string",
+          "title": "Bot Token",
+          "description": "Slack bot OAuth token (xoxb-...)",
+          "required": true,
+          "sensitive": true
+        }
+      }
+    }
+  ],
+  "mcpServers": {
+    "slack-bridge": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/slack.js"],
+      "env": {
+        "SLACK_URL": "${user_config.workspace_url}",
+        "SLACK_TOKEN": "${user_config.bot_token}"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "dev-toolkit",
+  "version": "0.1.0",
+  "description": "Development workflow automation",
+  "commands": {
+    "deploy": {
+      "source": "./commands/deploy.md",
+      "description": "Deploy to staging or production",
+      "argumentHint": "[environment]"
+    },
+    "status": {
+      "content": "# Check Status\n\nRun `kubectl get pods` and report the current deployment status.",
+      "description": "Show deployment status"
+    }
+  },
+  "skills": ["./skills/testing", "./skills/debugging"],
+  "agents": ["./agents/reviewer.md"]
+}
