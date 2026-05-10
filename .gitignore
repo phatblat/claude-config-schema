@@ -2,3 +2,10 @@ node_modules/
 dist/
 .DS_Store
 *.tgz
+
+# Python build artifacts
+__pycache__/
+*.egg-info/
+
+# Rust build artifacts
+generated/rust/target/

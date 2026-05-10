@@ -1,0 +1,10 @@
+[package]
+name = "claude-code-config"
+version = "0.0.0"
+edition = "2021"
+description = "Rust types for Claude Code configuration surfaces"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
