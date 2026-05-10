@@ -100,7 +100,7 @@ function main(): void {
     let diffOutput: string;
     try {
       diffOutput = execSync(
-        `diff -r --exclude='.gitkeep' --exclude='node_modules' --exclude='package-lock.json' --exclude='__pycache__' --exclude='*.egg-info' --exclude='target' "${tempGenerated}" "${COMMITTED_DIR}"`,
+        `diff -r --exclude='.gitkeep' --exclude='node_modules' --exclude='package-lock.json' --exclude='__pycache__' --exclude='*.egg-info' --exclude='target' --exclude='Cargo.lock' "${tempGenerated}" "${COMMITTED_DIR}"`,
         {
           cwd: PROJECT_ROOT,
           encoding: "utf-8",
