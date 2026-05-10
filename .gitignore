@@ -13,3 +13,5 @@ __pycache__/
 # Rust build artifacts
 generated/rust/target/
 generated/rust/Cargo.lock
+tests/rust/target/
+tests/rust/Cargo.lock

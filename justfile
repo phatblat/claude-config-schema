@@ -93,9 +93,33 @@ build: build-go build-ts build-python build-rust
 # tests recipes
 #
 
+# Run Go smoke tests
+[group('tests')]
+test-go:
+    cd tests/go && go test ./...
+
+# Run TypeScript smoke tests
+[group('tests')]
+test-ts:
+    npx tsx tests/ts/smoke.test.ts
+
+# Run Python smoke tests
+[group('tests')]
+test-python:
+    python3 tests/python/test_smoke.py
+
+# Run Rust smoke tests
+[group('tests')]
+test-rust:
+    cd tests/rust && cargo run
+
+# Run all smoke tests
+[group('tests')]
+test-smoke: test-go test-ts test-python test-rust
+
 # Run the full CI validation pipeline
 [group('tests')]
-test: lint lint-schemas validate-examples check-drift build
+test: lint lint-schemas validate-examples check-drift build test-smoke
 
 #
 # sync recipes
