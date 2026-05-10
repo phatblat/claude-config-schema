@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(just --list)",
+      "Bash(just test)",
+      "Bash(just build)",
+      "Bash(just build-go)",
+      "Bash(just build-ts)",
+      "Bash(just build-python)",
+      "Bash(just build-rust)",
+      "Bash(just lint)",
+      "Bash(just lint-schemas)",
+      "Bash(just validate-examples)",
+      "Bash(just check-drift)",
+      "Bash(just generate)",
+      "Bash(just clean)",
+      "Bash(just format)",
+      "Bash(just install)",
+      "Bash(just sync)",
+      "Bash(just sync-upstream)",
+      "Bash(just detect-version)",
+      "Bash(npm ci)",
+      "Bash(npm run lint:schemas)",
+      "Bash(npm run validate)",
+      "Bash(npm run check-drift)",
+      "Bash(npm run generate)",
+      "Bash(npm run detect-version)",
+      "Bash(npm run sync-upstream)",
+      "Bash(npx tsc --noEmit)"
+    ]
+  }
+}
