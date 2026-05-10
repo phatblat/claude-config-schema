@@ -49,11 +49,3 @@ Generated code is committed intentionally (same convention as protobuf/OpenAPI).
 ### `GENERATE_OUTPUT_DIR` env var
 
 `generate-bindings.ts` respects this to redirect output (used by `check-drift.ts` to write to a temp dir without touching the repo).
-
-## Conventions
-
-- **Scaffold files are generated.** `go.mod`, `pyproject.toml`, `Cargo.toml`, `package.json`, `tsconfig.json` in `generated/` are all emitted by `generate-bindings.ts` — don't hand-edit them, update the `scaffoldFiles` config in the script instead.
-- **CJS interop.** AJV and ajv-formats are CJS. Under Node16 module resolution, import with: `const Ajv = _Ajv as unknown as typeof _Ajv.default`.
-- **Generated TS uses `strict: false`.** Quicktype emits index signatures incompatible with strict mode.
-- **Type names derived from filenames.** `plugin-manifest.json` becomes `PluginManifest`. See `deriveTypeName()`.
-- **Examples are dual-purpose.** `examples/*/valid/` files are regression tests and onboarding material. `examples/*/invalid/` files test that validation correctly rejects bad configs.
