@@ -1401,7 +1401,7 @@ type MCPConfi struct {
 	Headers                                                                                   map[string]string `json:"headers,omitempty"`
 	// Transport type. 'streamable-http' is accepted as an alias for 'http'.                                    
 	Type                                                                                      *FluffyType       `json:"type,omitempty"`
-	// URL for http, sse, or ws servers. Supports ${VAR} expansion.                                             
+	// URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion.                         
 	URL                                                                                       *string           `json:"url,omitempty"`
 }
 

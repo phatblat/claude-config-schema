@@ -40,6 +40,7 @@ const SCHEMA_MAP: Record<string, string> = {
   plugins: "upstream/plugin-manifest.json",
   skills: "authored/skill-frontmatter.json",
   agents: "authored/agent-frontmatter.json",
+  mcp: "authored/mcp-config.json",
 };
 
 // ---------------------------------------------------------------------------

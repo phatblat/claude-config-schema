@@ -3130,7 +3130,7 @@ export interface MCPConfi {
      */
     type?: FluffyType;
     /**
-     * URL for http, sse, or ws servers. Supports ${VAR} expansion.
+     * URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion.
      */
     url?: string;
 }

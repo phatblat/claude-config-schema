@@ -3964,7 +3964,7 @@ class MCPConfi:
     """Transport type. 'streamable-http' is accepted as an alias for 'http'."""
 
     url: Optional[str]
-    """URL for http, sse, or ws servers. Supports ${VAR} expansion."""
+    """URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion."""
 
     def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], headers: Optional[Dict[str, str]], type: Optional[FluffyType], url: Optional[str]) -> None:
         self.args = args

@@ -1,0 +1,5 @@
+{
+  "name": "test-agent",
+  "description": "Agent with invalid color",
+  "color": "rainbow"
+}

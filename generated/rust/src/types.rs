@@ -2292,7 +2292,7 @@ pub struct McpConfi {
     #[serde(rename = "type")]
     mcp_confi_type: Option<FluffyType>,
 
-    /// URL for http, sse, or ws servers. Supports ${VAR} expansion.
+    /// URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion.
     url: Option<String>,
 }
 

@@ -1,0 +1,8 @@
+{
+  "name": "deep-research",
+  "description": "Research a topic thoroughly using codebase exploration",
+  "context": "fork",
+  "agent": "Explore",
+  "allowed-tools": "Read Grep Glob",
+  "paths": ["src/**/*.ts", "tests/**/*.ts"]
+}

@@ -41,8 +41,7 @@
         },
         "url": {
           "type": "string",
-          "description": "URL for http, sse, or ws servers. Supports ${VAR} expansion.",
-          "format": "uri"
+          "description": "URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion."
         },
         "headers": {
           "type": "object",
