@@ -99,11 +99,14 @@ function main(): void {
 
     let diffOutput: string;
     try {
-      diffOutput = execSync(`diff -r "${tempGenerated}" "${COMMITTED_DIR}"`, {
-        cwd: PROJECT_ROOT,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
-      });
+      diffOutput = execSync(
+        `diff -r --exclude='.gitkeep' "${tempGenerated}" "${COMMITTED_DIR}"`,
+        {
+          cwd: PROJECT_ROOT,
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "pipe"],
+        }
+      );
     } catch (err: unknown) {
       // `diff -r` exits 1 when differences exist and 2 on errors.
       if (

@@ -172,9 +172,7 @@ function ensureParentDir(filePath: string): void {
 interface GenerationResult {
   lang: string;
   outputPath: string;
-  action: "generated" | "skipped";
-  typeCount?: number;
-  reason?: string;
+  typeCount: number;
 }
 
 async function generateForLanguage(
@@ -184,15 +182,8 @@ async function generateForLanguage(
   const outputFile = join(GENERATED_DIR, target.outputPath);
   const outputDir = dirname(outputFile);
 
-  // Skip if the output directory does not exist
-  if (!existsSync(outputDir)) {
-    return {
-      lang: target.lang,
-      outputPath: target.outputPath,
-      action: "skipped",
-      reason: `directory ${target.outputPath.split("/").slice(0, -1).join("/")} does not exist`,
-    };
-  }
+  // Create the output directory if it doesn't exist
+  mkdirSync(outputDir, { recursive: true });
 
   const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
 
@@ -218,7 +209,6 @@ async function generateForLanguage(
   return {
     lang: target.lang,
     outputPath: target.outputPath,
-    action: "generated",
     typeCount: schemas.length,
   };
 }
@@ -249,23 +239,13 @@ async function main(): Promise<void> {
     results.push(result);
   }
 
-  // Print summary
   console.log("--- generate-bindings summary ---\n");
   for (const r of results) {
-    if (r.action === "generated") {
-      console.log(
-        `  GENERATED  ${r.lang.padEnd(12)} → ${r.outputPath}  (${r.typeCount} type(s))`
-      );
-    } else {
-      console.log(`  skipped    ${r.lang.padEnd(12)}   ${r.reason}`);
-    }
+    console.log(
+      `  GENERATED  ${r.lang.padEnd(12)} → ${r.outputPath}  (${r.typeCount} type(s))`
+    );
   }
-
-  const generatedCount = results.filter((r) => r.action === "generated").length;
-  const skippedCount = results.filter((r) => r.action === "skipped").length;
-  console.log(
-    `\n${generatedCount} language(s) generated, ${skippedCount} skipped.`
-  );
+  console.log(`\n${results.length} language(s) generated.`);
 }
 
 main().catch((error: unknown) => {
