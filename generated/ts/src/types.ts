@@ -3104,33 +3104,41 @@ export interface ClaudeCodeMCPJSON {
 }
 
 /**
- * MCP server configuration. Exactly one transport must be specified: stdio (command),
- * http/sse/ws (url).
+ * MCP server configuration. Exactly one transport must be specified: stdio (command) or
+ * remote (url).
+ *
+ * Local stdio server. Runs as a child process.
+ *
+ * Remote server (http, sse, or ws). Connects to a URL.
  */
 export interface MCPConfi {
     /**
-     * Command-line arguments for stdio servers. Supports ${VAR} expansion.
+     * Command-line arguments. Supports ${VAR} expansion.
      */
     args?: string[];
     /**
-     * Executable to run for stdio servers. Supports ${VAR} environment variable expansion.
+     * Executable to run. Supports ${VAR} environment variable expansion.
      */
     command?: string;
     /**
      * Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}
      * expansion.
+     *
+     * Environment variables. Supports ${VAR} and ${VAR:-default} expansion.
      */
     env?: { [key: string]: string };
     /**
-     * HTTP headers for remote servers. Supports ${VAR} expansion for values.
-     */
-    headers?: { [key: string]: string };
-    /**
+     * Transport type. Optional for stdio servers (inferred from command).
+     *
      * Transport type. 'streamable-http' is accepted as an alias for 'http'.
      */
     type?: FluffyType;
     /**
-     * URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion.
+     * HTTP headers. Supports ${VAR} expansion for values.
+     */
+    headers?: { [key: string]: string };
+    /**
+     * Server URL. Supports ${VAR} and ${VAR:-default} expansion.
      */
     url?: string;
 }
@@ -4055,8 +4063,8 @@ const typeMap: any = {
         { json: "args", js: "args", typ: u(undefined, a("")) },
         { json: "command", js: "command", typ: u(undefined, "") },
         { json: "env", js: "env", typ: u(undefined, m("")) },
-        { json: "headers", js: "headers", typ: u(undefined, m("")) },
         { json: "type", js: "type", typ: u(undefined, r("FluffyType")) },
+        { json: "headers", js: "headers", typ: u(undefined, m("")) },
         { json: "url", js: "url", typ: u(undefined, "") },
     ], false),
     "ClaudeCodeSkillFrontmatter": o([

@@ -3944,34 +3944,42 @@ class FluffyType(Enum):
 
 
 class MCPConfi:
-    """MCP server configuration. Exactly one transport must be specified: stdio (command),
-    http/sse/ws (url).
+    """MCP server configuration. Exactly one transport must be specified: stdio (command) or
+    remote (url).
+    
+    Local stdio server. Runs as a child process.
+    
+    Remote server (http, sse, or ws). Connects to a URL.
     """
     args: Optional[List[str]]
-    """Command-line arguments for stdio servers. Supports ${VAR} expansion."""
+    """Command-line arguments. Supports ${VAR} expansion."""
 
     command: Optional[str]
-    """Executable to run for stdio servers. Supports ${VAR} environment variable expansion."""
+    """Executable to run. Supports ${VAR} environment variable expansion."""
 
     env: Optional[Dict[str, str]]
     """Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}
     expansion.
+    
+    Environment variables. Supports ${VAR} and ${VAR:-default} expansion.
+    """
+    type: Optional[FluffyType]
+    """Transport type. Optional for stdio servers (inferred from command).
+    
+    Transport type. 'streamable-http' is accepted as an alias for 'http'.
     """
     headers: Optional[Dict[str, str]]
-    """HTTP headers for remote servers. Supports ${VAR} expansion for values."""
-
-    type: Optional[FluffyType]
-    """Transport type. 'streamable-http' is accepted as an alias for 'http'."""
+    """HTTP headers. Supports ${VAR} expansion for values."""
 
     url: Optional[str]
-    """URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion."""
+    """Server URL. Supports ${VAR} and ${VAR:-default} expansion."""
 
-    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], headers: Optional[Dict[str, str]], type: Optional[FluffyType], url: Optional[str]) -> None:
+    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[FluffyType], headers: Optional[Dict[str, str]], url: Optional[str]) -> None:
         self.args = args
         self.command = command
         self.env = env
-        self.headers = headers
         self.type = type
+        self.headers = headers
         self.url = url
 
     @staticmethod
@@ -3980,10 +3988,10 @@ class MCPConfi:
         args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
         command = from_union([from_str, from_none], obj.get("command"))
         env = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("env"))
-        headers = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("headers"))
         type = from_union([FluffyType, from_none], obj.get("type"))
+        headers = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("headers"))
         url = from_union([from_str, from_none], obj.get("url"))
-        return MCPConfi(args, command, env, headers, type, url)
+        return MCPConfi(args, command, env, type, headers, url)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -3993,10 +4001,10 @@ class MCPConfi:
             result["command"] = from_union([from_str, from_none], self.command)
         if self.env is not None:
             result["env"] = from_union([lambda x: from_dict(from_str, x), from_none], self.env)
-        if self.headers is not None:
-            result["headers"] = from_union([lambda x: from_dict(from_str, x), from_none], self.headers)
         if self.type is not None:
             result["type"] = from_union([lambda x: to_enum(FluffyType, x), from_none], self.type)
+        if self.headers is not None:
+            result["headers"] = from_union([lambda x: from_dict(from_str, x), from_none], self.headers)
         if self.url is not None:
             result["url"] = from_union([from_str, from_none], self.url)
         return result

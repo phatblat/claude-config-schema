@@ -2271,28 +2271,36 @@ pub struct ClaudeCodeMcpJson {
     mcp_servers: HashMap<String, McpConfi>,
 }
 
-/// MCP server configuration. Exactly one transport must be specified: stdio (command),
-/// http/sse/ws (url).
+/// MCP server configuration. Exactly one transport must be specified: stdio (command) or
+/// remote (url).
+///
+/// Local stdio server. Runs as a child process.
+///
+/// Remote server (http, sse, or ws). Connects to a URL.
 #[derive(Serialize, Deserialize)]
 pub struct McpConfi {
-    /// Command-line arguments for stdio servers. Supports ${VAR} expansion.
+    /// Command-line arguments. Supports ${VAR} expansion.
     args: Option<Vec<String>>,
 
-    /// Executable to run for stdio servers. Supports ${VAR} environment variable expansion.
+    /// Executable to run. Supports ${VAR} environment variable expansion.
     command: Option<String>,
 
     /// Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}
     /// expansion.
+    ///
+    /// Environment variables. Supports ${VAR} and ${VAR:-default} expansion.
     env: Option<HashMap<String, String>>,
 
-    /// HTTP headers for remote servers. Supports ${VAR} expansion for values.
-    headers: Option<HashMap<String, String>>,
-
+    /// Transport type. Optional for stdio servers (inferred from command).
+    ///
     /// Transport type. 'streamable-http' is accepted as an alias for 'http'.
     #[serde(rename = "type")]
     mcp_confi_type: Option<FluffyType>,
 
-    /// URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion.
+    /// HTTP headers. Supports ${VAR} expansion for values.
+    headers: Option<HashMap<String, String>>,
+
+    /// Server URL. Supports ${VAR} and ${VAR:-default} expansion.
     url: Option<String>,
 }
 

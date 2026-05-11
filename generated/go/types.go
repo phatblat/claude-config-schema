@@ -1387,21 +1387,29 @@ type ClaudeCodeMCPJSON struct {
 	MCPServers                                         map[string]MCPConfi `json:"mcpServers"`
 }
 
-// MCP server configuration. Exactly one transport must be specified: stdio (command),
-// http/sse/ws (url).
+// MCP server configuration. Exactly one transport must be specified: stdio (command) or
+// remote (url).
+//
+// Local stdio server. Runs as a child process.
+//
+// Remote server (http, sse, or ws). Connects to a URL.
 type MCPConfi struct {
-	// Command-line arguments for stdio servers. Supports ${VAR} expansion.                                     
+	// Command-line arguments. Supports ${VAR} expansion.                                                       
 	Args                                                                                      []string          `json:"args,omitempty"`
-	// Executable to run for stdio servers. Supports ${VAR} environment variable expansion.                     
+	// Executable to run. Supports ${VAR} environment variable expansion.                                       
 	Command                                                                                   *string           `json:"command,omitempty"`
 	// Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}                  
 	// expansion.                                                                                               
+	//                                                                                                          
+	// Environment variables. Supports ${VAR} and ${VAR:-default} expansion.                                    
 	Env                                                                                       map[string]string `json:"env,omitempty"`
-	// HTTP headers for remote servers. Supports ${VAR} expansion for values.                                   
-	Headers                                                                                   map[string]string `json:"headers,omitempty"`
+	// Transport type. Optional for stdio servers (inferred from command).                                      
+	//                                                                                                          
 	// Transport type. 'streamable-http' is accepted as an alias for 'http'.                                    
 	Type                                                                                      *FluffyType       `json:"type,omitempty"`
-	// URL for http, sse, or ws servers. Supports ${VAR} and ${VAR:-default} expansion.                         
+	// HTTP headers. Supports ${VAR} expansion for values.                                                      
+	Headers                                                                                   map[string]string `json:"headers,omitempty"`
+	// Server URL. Supports ${VAR} and ${VAR:-default} expansion.                                               
 	URL                                                                                       *string           `json:"url,omitempty"`
 }
 
