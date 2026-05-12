@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/phatblat/claude-config-schema/authored/agent-frontmatter.json",
+  "title": "Claude Code Agent Frontmatter",
+  "description": "YAML frontmatter for subagent .md files. Source: https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier using lowercase letters and hyphens.",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "When Claude should delegate to this subagent.",
+      "minLength": 1
+    },
+    "tools": {
+      "description": "Tools the subagent can use. Inherits all tools if omitted.",
+      "anyOf": [
+        {
+          "type": "string",
+          "description": "Comma-separated tool names."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of tool names."
+        }
+      ]
+    },
+    "disallowedTools": {
+      "description": "Tools to deny, removed from inherited or specified list.",
+      "anyOf": [
+        {
+          "type": "string",
+          "description": "Comma-separated tool names."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of tool names."
+        }
+      ]
+    },
+    "model": {
+      "type": "string",
+      "description": "Model to use: 'sonnet', 'opus', 'haiku', a full model ID (e.g. 'claude-opus-4-7'), or 'inherit'. Defaults to 'inherit'."
+    },
+    "permissionMode": {
+      "type": "string",
+      "description": "Permission mode for the subagent. Ignored for plugin subagents.",
+      "enum": [
+        "default",
+        "acceptEdits",
+        "auto",
+        "dontAsk",
+        "bypassPermissions",
+        "plan"
+      ]
+    },
+    "maxTurns": {
+      "type": "integer",
+      "description": "Maximum number of agentic turns before the subagent stops.",
+      "minimum": 1
+    },
+    "skills": {
+      "description": "Skills to preload into the subagent's context at startup.",
+      "anyOf": [
+        {
+          "type": "string",
+          "description": "Comma-separated skill names."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of skill names."
+        }
+      ]
+    },
+    "mcpServers": {
+      "description": "MCP servers available to this subagent. Each entry is a server name string or an inline definition object. Ignored for plugin subagents.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Name of an already-configured MCP server."
+              },
+              {
+                "type": "object",
+                "description": "Inline MCP server definition keyed by server name.",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["stdio", "sse", "http", "ws"]
+                    },
+                    "command": { "type": "string" },
+                    "args": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "env": {
+                      "type": "object",
+                      "additionalProperties": { "type": "string" }
+                    },
+                    "url": { "type": "string" }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "object",
+          "description": "Object mapping server names to their configurations.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["stdio", "sse", "http", "ws"]
+              },
+              "command": { "type": "string" },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "url": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Lifecycle hooks scoped to this subagent. Ignored for plugin subagents."
+    },
+    "memory": {
+      "type": "string",
+      "description": "Persistent memory scope. Enables cross-session learning.",
+      "enum": ["user", "project", "local"]
+    },
+    "background": {
+      "type": "boolean",
+      "description": "Set to true to always run this subagent as a background task.",
+      "default": false
+    },
+    "effort": {
+      "type": "string",
+      "description": "Effort level when this subagent is active. Overrides the session effort level.",
+      "enum": ["low", "medium", "high", "xhigh", "max"]
+    },
+    "isolation": {
+      "type": "string",
+      "description": "Set to 'worktree' to run in a temporary git worktree.",
+      "enum": ["worktree"]
+    },
+    "color": {
+      "type": "string",
+      "description": "Display color for the subagent in the task list and transcript.",
+      "enum": [
+        "red",
+        "blue",
+        "green",
+        "yellow",
+        "purple",
+        "orange",
+        "pink",
+        "cyan"
+      ]
+    },
+    "initialPrompt": {
+      "type": "string",
+      "description": "Auto-submitted as the first user turn when this agent runs as the main session agent (via --agent or the agent setting). Commands and skills are processed."
+    }
+  },
+  "additionalProperties": false
+}

@@ -56,7 +56,7 @@ pub struct ClaudeCodePluginManifest {
 
     lsp_servers: Option<LspServers>,
 
-    mcp_servers: Option<McpServers>,
+    mcp_servers: Option<ClaudeCodePluginManifestMcpServers>,
 
     /// Background watch scripts the host arms as persistent Monitor tasks (unsandboxed, same
     /// trust tier as hooks) so plugins need not instruct the model to arm them. When omitted,
@@ -89,6 +89,18 @@ pub struct ClaudeCodePluginManifest {
     version: Option<String>,
 }
 
+/// Tools to deny, removed from inherited or specified list.
+///
+/// Skills to preload into the subagent's context at startup.
+///
+/// Tools the subagent can use. Inherits all tools if omitted.
+///
+/// Tools Claude can use without asking permission when this skill is active.
+///
+/// Named positional arguments for $name substitution in the skill content.
+///
+/// Glob patterns that limit when this skill is activated. When set, Claude loads the skill
+/// automatically only when working with files matching the patterns.
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Agents {
@@ -374,6 +386,8 @@ pub enum HookType {
 ///
 /// Shell interpreter for the command. "bash" uses the login shell (bash/zsh/sh);
 /// "powershell" uses pwsh. Defaults to bash.
+///
+/// Shell to use for !`command` and ```! blocks in this skill.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Shell {
@@ -592,26 +606,26 @@ pub struct LspServersLspServerClass {
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum McpServers {
-    McpServersMcpServerClassMap(HashMap<String, McpServersMcpServerClass>),
+pub enum ClaudeCodePluginManifestMcpServers {
+    FluffyMcpServerMap(HashMap<String, FluffyMcpServer>),
 
     String(String),
 
-    UnionArray(Vec<McpServerElement>),
+    UnionArray(Vec<IndigoMcpServer>),
 }
 
 /// Array of MCP server configurations (paths, MCPB files, or inline definitions)
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum McpServerElement {
-    McpServerMcpServerMap(HashMap<String, McpServerMcpServer>),
+pub enum IndigoMcpServer {
+    PurpleMcpServerMap(HashMap<String, PurpleMcpServer>),
 
     String(String),
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct McpServerMcpServer {
+pub struct PurpleMcpServer {
     args: Option<Vec<String>>,
 
     command: Option<String>,
@@ -619,7 +633,7 @@ pub struct McpServerMcpServer {
     env: Option<HashMap<String, String>>,
 
     #[serde(rename = "type")]
-    mcp_server_type: Option<McpServerType>,
+    mcp_server_type: Option<PurpleType>,
 
     headers: Option<HashMap<String, String>>,
 
@@ -632,7 +646,7 @@ pub struct McpServerMcpServer {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum McpServerType {
+pub enum PurpleType {
     Http,
 
     Sse,
@@ -658,7 +672,7 @@ pub struct PurpleOauth {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct McpServersMcpServerClass {
+pub struct FluffyMcpServer {
     args: Option<Vec<String>>,
 
     command: Option<String>,
@@ -666,7 +680,7 @@ pub struct McpServersMcpServerClass {
     env: Option<HashMap<String, String>>,
 
     #[serde(rename = "type")]
-    mcp_server_type: Option<McpServerType>,
+    mcp_server_type: Option<PurpleType>,
 
     headers: Option<HashMap<String, String>>,
 
@@ -928,7 +942,7 @@ pub struct ClaudeCodeSettings {
     /// The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto
     /// to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment
     /// variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level
-    effort_level: Option<EffortLevel>,
+    effort_level: Option<Effort>,
 
     /// Whether to automatically approve all MCP servers in the project. See
     /// https://code.claude.com/docs/en/mcp
@@ -1338,9 +1352,13 @@ pub enum Disable {
 /// The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto
 /// to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment
 /// variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level
+///
+/// Effort level when this subagent is active. Overrides the session effort level.
+///
+/// Effort level when this skill is active. Overrides the session effort level.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum EffortLevel {
+pub enum Effort {
     High,
 
     Low,
@@ -2080,5 +2098,294 @@ pub struct Worktree {
     /// listed paths are written to disk, which is faster in large monorepos. See
     /// https://code.claude.com/docs/en/settings#worktree-settings
     sparse_paths: Option<Vec<String>>,
+}
+
+/// YAML frontmatter for subagent .md files. Source:
+/// https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeCodeAgentFrontmatter {
+    /// Set to true to always run this subagent as a background task.
+    background: Option<bool>,
+
+    /// Display color for the subagent in the task list and transcript.
+    color: Option<Color>,
+
+    /// When Claude should delegate to this subagent.
+    description: String,
+
+    /// Tools to deny, removed from inherited or specified list.
+    disallowed_tools: Option<Agents>,
+
+    /// Effort level when this subagent is active. Overrides the session effort level.
+    effort: Option<Effort>,
+
+    /// Lifecycle hooks scoped to this subagent. Ignored for plugin subagents.
+    hooks: Option<HashMap<String, Option<serde_json::Value>>>,
+
+    /// Auto-submitted as the first user turn when this agent runs as the main session agent (via
+    /// --agent or the agent setting). Commands and skills are processed.
+    initial_prompt: Option<String>,
+
+    /// Set to 'worktree' to run in a temporary git worktree.
+    isolation: Option<Isolation>,
+
+    /// Maximum number of agentic turns before the subagent stops.
+    max_turns: Option<i64>,
+
+    /// MCP servers available to this subagent. Each entry is a server name string or an inline
+    /// definition object. Ignored for plugin subagents.
+    mcp_servers: Option<ClaudeCodeAgentFrontmatterMcpServers>,
+
+    /// Persistent memory scope. Enables cross-session learning.
+    memory: Option<Memory>,
+
+    /// Model to use: 'sonnet', 'opus', 'haiku', a full model ID (e.g. 'claude-opus-4-7'), or
+    /// 'inherit'. Defaults to 'inherit'.
+    model: Option<String>,
+
+    /// Unique identifier using lowercase letters and hyphens.
+    name: String,
+
+    /// Permission mode for the subagent. Ignored for plugin subagents.
+    permission_mode: Option<PermissionMode>,
+
+    /// Skills to preload into the subagent's context at startup.
+    skills: Option<Agents>,
+
+    /// Tools the subagent can use. Inherits all tools if omitted.
+    tools: Option<Agents>,
+}
+
+/// Display color for the subagent in the task list and transcript.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Color {
+    Blue,
+
+    Cyan,
+
+    Green,
+
+    Orange,
+
+    Pink,
+
+    Purple,
+
+    Red,
+
+    Yellow,
+}
+
+/// Set to 'worktree' to run in a temporary git worktree.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Isolation {
+    Worktree,
+}
+
+/// MCP servers available to this subagent. Each entry is a server name string or an inline
+/// definition object. Ignored for plugin subagents.
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ClaudeCodeAgentFrontmatterMcpServers {
+    StickyMcpServerMap(HashMap<String, StickyMcpServer>),
+
+    UnionArray(Vec<IndecentMcpServer>),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IndecentMcpServer {
+    String(String),
+
+    TentacledMcpServerMap(HashMap<String, TentacledMcpServer>),
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TentacledMcpServer {
+    args: Option<Vec<String>>,
+
+    command: Option<String>,
+
+    env: Option<HashMap<String, String>>,
+
+    #[serde(rename = "type")]
+    mcp_server_type: Option<PurpleType>,
+
+    url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StickyMcpServer {
+    args: Option<Vec<String>>,
+
+    command: Option<String>,
+
+    env: Option<HashMap<String, String>>,
+
+    #[serde(rename = "type")]
+    mcp_server_type: Option<PurpleType>,
+
+    url: Option<String>,
+}
+
+/// Persistent memory scope. Enables cross-session learning.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Memory {
+    Local,
+
+    Project,
+
+    User,
+}
+
+/// Permission mode for the subagent. Ignored for plugin subagents.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PermissionMode {
+    #[serde(rename = "acceptEdits")]
+    AcceptEdits,
+
+    Auto,
+
+    #[serde(rename = "bypassPermissions")]
+    BypassPermissions,
+
+    Default,
+
+    #[serde(rename = "dontAsk")]
+    DontAsk,
+
+    Plan,
+}
+
+/// Project-scoped MCP server configuration (.mcp.json). Source:
+/// https://code.claude.com/docs/en/mcp#project-scope
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeCodeMcpJson {
+    /// Map of MCP server names to their configurations.
+    mcp_servers: HashMap<String, McpConfi>,
+}
+
+/// MCP server configuration. Exactly one transport must be specified: stdio (command) or
+/// remote (url).
+///
+/// Local stdio server. Runs as a child process.
+///
+/// Remote server (http, sse, or ws). Connects to a URL.
+#[derive(Serialize, Deserialize)]
+pub struct McpConfi {
+    /// Command-line arguments. Supports ${VAR} expansion.
+    args: Option<Vec<String>>,
+
+    /// Executable to run. Supports ${VAR} environment variable expansion.
+    command: Option<String>,
+
+    /// Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}
+    /// expansion.
+    ///
+    /// Environment variables. Supports ${VAR} and ${VAR:-default} expansion.
+    env: Option<HashMap<String, String>>,
+
+    /// Transport type. Optional for stdio servers (inferred from command).
+    ///
+    /// Transport type. 'streamable-http' is accepted as an alias for 'http'.
+    #[serde(rename = "type")]
+    mcp_confi_type: Option<FluffyType>,
+
+    /// HTTP headers. Supports ${VAR} expansion for values.
+    headers: Option<HashMap<String, String>>,
+
+    /// Server URL. Supports ${VAR} and ${VAR:-default} expansion.
+    url: Option<String>,
+}
+
+/// Transport type. 'streamable-http' is accepted as an alias for 'http'.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FluffyType {
+    Http,
+
+    Sse,
+
+    Stdio,
+
+    #[serde(rename = "streamable-http")]
+    StreamableHttp,
+
+    Ws,
+}
+
+/// YAML frontmatter for SKILL.md files. Source:
+/// https://code.claude.com/docs/en/skills#frontmatter-reference
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ClaudeCodeSkillFrontmatter {
+    /// Which subagent type to use when context: fork is set. Options include built-in agents
+    /// (Explore, Plan, general-purpose) or any custom subagent.
+    agent: Option<String>,
+
+    /// Tools Claude can use without asking permission when this skill is active.
+    allowed_tools: Option<Agents>,
+
+    /// Hint shown during autocomplete to indicate expected arguments. Example: '[issue-number]'
+    /// or '[filename] [format]'.
+    argument_hint: Option<String>,
+
+    /// Named positional arguments for $name substitution in the skill content.
+    arguments: Option<Agents>,
+
+    /// Set to 'fork' to run in a forked subagent context.
+    context: Option<Context>,
+
+    /// What the skill does and when to use it. Claude uses this to decide when to apply the
+    /// skill. Combined with when_to_use, truncated at 1,536 characters in the skill listing.
+    description: Option<String>,
+
+    /// Set to true to prevent Claude from automatically loading this skill. Use for workflows
+    /// you want to trigger manually with /name.
+    disable_model_invocation: Option<bool>,
+
+    /// Effort level when this skill is active. Overrides the session effort level.
+    effort: Option<Effort>,
+
+    /// Hooks scoped to this skill's lifecycle. See
+    /// https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents
+    hooks: Option<HashMap<String, Option<serde_json::Value>>>,
+
+    /// Model to use when this skill is active. Accepts the same values as /model, or 'inherit'
+    /// to keep the active model.
+    model: Option<String>,
+
+    /// Display name for the skill. If omitted, uses the directory name. Lowercase letters,
+    /// numbers, and hyphens only (max 64 characters).
+    name: Option<String>,
+
+    /// Glob patterns that limit when this skill is activated. When set, Claude loads the skill
+    /// automatically only when working with files matching the patterns.
+    paths: Option<Agents>,
+
+    /// Shell to use for !`command` and ```! blocks in this skill.
+    shell: Option<Shell>,
+
+    /// Set to false to hide from the / menu. Use for background knowledge users shouldn't invoke
+    /// directly.
+    user_invocable: Option<bool>,
+
+    /// Additional context for when Claude should invoke the skill, such as trigger phrases or
+    /// example requests. Appended to description in the skill listing.
+    #[serde(rename = "when_to_use")]
+    when_to_use: Option<String>,
+}
+
+/// Set to 'fork' to run in a forked subagent context.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Context {
+    Fork,
 }
 

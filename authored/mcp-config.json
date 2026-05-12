@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/phatblat/claude-config-schema/authored/mcp-config.json",
+  "title": "Claude Code .mcp.json",
+  "description": "Project-scoped MCP server configuration (.mcp.json). Source: https://code.claude.com/docs/en/mcp#project-scope",
+  "type": "object",
+  "properties": {
+    "mcpServers": {
+      "type": "object",
+      "description": "Map of MCP server names to their configurations.",
+      "additionalProperties": {
+        "$ref": "#/$defs/mcpServer"
+      }
+    }
+  },
+  "required": ["mcpServers"],
+  "additionalProperties": false,
+  "$defs": {
+    "mcpServer": {
+      "description": "MCP server configuration. Exactly one transport must be specified: stdio (command) or remote (url).",
+      "oneOf": [
+        { "$ref": "#/$defs/stdioServer" },
+        { "$ref": "#/$defs/remoteServer" }
+      ]
+    },
+    "stdioServer": {
+      "type": "object",
+      "description": "Local stdio server. Runs as a child process.",
+      "required": ["command"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "stdio",
+          "description": "Transport type. Optional for stdio servers (inferred from command)."
+        },
+        "command": {
+          "type": "string",
+          "description": "Executable to run. Supports ${VAR} environment variable expansion."
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Command-line arguments. Supports ${VAR} expansion."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default} expansion."
+        }
+      },
+      "not": {
+        "required": ["url"]
+      },
+      "additionalProperties": false
+    },
+    "remoteServer": {
+      "type": "object",
+      "description": "Remote server (http, sse, or ws). Connects to a URL.",
+      "required": ["type", "url"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Transport type. 'streamable-http' is accepted as an alias for 'http'.",
+          "enum": ["http", "streamable-http", "sse", "ws"]
+        },
+        "url": {
+          "type": "string",
+          "description": "Server URL. Supports ${VAR} and ${VAR:-default} expansion."
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "HTTP headers. Supports ${VAR} expansion for values."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables. Supports ${VAR} and ${VAR:-default} expansion."
+        }
+      },
+      "not": {
+        "required": ["command"]
+      },
+      "additionalProperties": false
+    }
+  }
+}

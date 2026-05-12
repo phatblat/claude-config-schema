@@ -1,0 +1,13 @@
+{
+  "name": "deploy",
+  "description": "Deploy the application to production",
+  "when_to_use": "When the user says 'deploy', 'ship it', or 'push to prod'",
+  "argument-hint": "[environment]",
+  "arguments": ["environment", "version"],
+  "disable-model-invocation": true,
+  "user-invocable": true,
+  "allowed-tools": ["Bash(git *)", "Bash(npm run *)"],
+  "model": "sonnet",
+  "effort": "high",
+  "shell": "bash"
+}

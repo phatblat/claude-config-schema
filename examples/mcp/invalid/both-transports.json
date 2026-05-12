@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "confused": {
+      "type": "stdio",
+      "command": "npx",
+      "url": "https://example.com/mcp"
+    }
+  }
+}

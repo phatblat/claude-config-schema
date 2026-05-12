@@ -1,0 +1,15 @@
+{
+  "name": "db-reader",
+  "description": "Execute read-only database queries",
+  "tools": ["Bash", "Read"],
+  "disallowedTools": ["Write", "Edit"],
+  "model": "haiku",
+  "permissionMode": "dontAsk",
+  "maxTurns": 10,
+  "skills": ["api-conventions"],
+  "memory": "project",
+  "background": false,
+  "effort": "medium",
+  "isolation": "worktree",
+  "color": "blue"
+}

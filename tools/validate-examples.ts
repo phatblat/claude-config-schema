@@ -4,7 +4,7 @@
 /**
  * Validates example config files against their JSON Schemas.
  *
- * For each surface (settings, plugins, skills, agents):
+ * For each surface (settings, plugins, skills, agents, mcp):
  *   - Files in `examples/<surface>/valid/`   MUST pass validation.
  *   - Files in `examples/<surface>/invalid/` MUST fail validation.
  *
@@ -40,6 +40,7 @@ const SCHEMA_MAP: Record<string, string> = {
   plugins: "upstream/plugin-manifest.json",
   skills: "authored/skill-frontmatter.json",
   agents: "authored/agent-frontmatter.json",
+  mcp: "authored/mcp-config.json",
 };
 
 // ---------------------------------------------------------------------------

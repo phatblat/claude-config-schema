@@ -8,6 +8,15 @@
 //
 //    claudeCodeSettings, err := UnmarshalClaudeCodeSettings(bytes)
 //    bytes, err = claudeCodeSettings.Marshal()
+//
+//    claudeCodeAgentFrontmatter, err := UnmarshalClaudeCodeAgentFrontmatter(bytes)
+//    bytes, err = claudeCodeAgentFrontmatter.Marshal()
+//
+//    claudeCodeMCPJSON, err := UnmarshalClaudeCodeMCPJSON(bytes)
+//    bytes, err = claudeCodeMCPJSON.Marshal()
+//
+//    claudeCodeSkillFrontmatter, err := UnmarshalClaudeCodeSkillFrontmatter(bytes)
+//    bytes, err = claudeCodeSkillFrontmatter.Marshal()
 
 package claudeconfig
 
@@ -36,6 +45,36 @@ func (r *ClaudeCodeSettings) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
 
+func UnmarshalClaudeCodeAgentFrontmatter(data []byte) (ClaudeCodeAgentFrontmatter, error) {
+	var r ClaudeCodeAgentFrontmatter
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *ClaudeCodeAgentFrontmatter) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+func UnmarshalClaudeCodeMCPJSON(data []byte) (ClaudeCodeMCPJSON, error) {
+	var r ClaudeCodeMCPJSON
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *ClaudeCodeMCPJSON) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+func UnmarshalClaudeCodeSkillFrontmatter(data []byte) (ClaudeCodeSkillFrontmatter, error) {
+	var r ClaudeCodeSkillFrontmatter
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *ClaudeCodeSkillFrontmatter) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
 // Manifest (.claude-plugin/plugin.json) for a Claude Code plugin. Learn more:
 // https://code.claude.com/docs/en/plugins-reference
 type ClaudeCodePluginManifest struct {
@@ -61,7 +100,7 @@ type ClaudeCodePluginManifest struct {
 	// SPDX license identifier (e.g., MIT, Apache-2.0)                                                                                        
 	License                                                                                     *string                                       `json:"license,omitempty"`
 	LspServers                                                                                  *LspServers                                   `json:"lspServers"`
-	MCPServers                                                                                  *MCPServers                                   `json:"mcpServers"`
+	MCPServers                                                                                  *ClaudeCodePluginManifestMCPServers           `json:"mcpServers"`
 	// Background watch scripts the host arms as persistent Monitor tasks (unsandboxed, same                                                  
 	// trust tier as hooks) so plugins need not instruct the model to arm them. When omitted,                                                 
 	// monitors/monitors.json at the plugin root is loaded if present.                                                                        
@@ -355,11 +394,11 @@ type LspServersLspServerClass struct {
 	WorkspaceFolder                                                                             *string           `json:"workspaceFolder,omitempty"`
 }
 
-type MCPServerMCPServer struct {
+type PurpleMCPServer struct {
 	Args          []string          `json:"args,omitempty"`
 	Command       *string           `json:"command,omitempty"`
 	Env           map[string]string `json:"env,omitempty"`
-	Type          *MCPServerType    `json:"type,omitempty"`
+	Type          *PurpleType       `json:"type,omitempty"`
 	Headers       map[string]string `json:"headers,omitempty"`
 	HeadersHelper *string           `json:"headersHelper,omitempty"`
 	Oauth         *PurpleOauth      `json:"oauth,omitempty"`
@@ -374,11 +413,11 @@ type PurpleOauth struct {
 	Xaa                   *bool   `json:"xaa,omitempty"`
 }
 
-type MCPServersMCPServerClass struct {
+type FluffyMCPServer struct {
 	Args          []string          `json:"args,omitempty"`
 	Command       *string           `json:"command,omitempty"`
 	Env           map[string]string `json:"env,omitempty"`
-	Type          *MCPServerType    `json:"type,omitempty"`
+	Type          *PurpleType       `json:"type,omitempty"`
 	Headers       map[string]string `json:"headers,omitempty"`
 	HeadersHelper *string           `json:"headersHelper,omitempty"`
 	Oauth         *FluffyOauth      `json:"oauth,omitempty"`
@@ -564,7 +603,7 @@ type ClaudeCodeSettings struct {
 	// The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto                                      
 	// to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment                                        
 	// variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level                                               
-	EffortLevel                                                                                 *EffortLevel                        `json:"effortLevel,omitempty"`
+	EffortLevel                                                                                 *Effort                             `json:"effortLevel,omitempty"`
 	// Whether to automatically approve all MCP servers in the project. See                                                         
 	// https://code.claude.com/docs/en/mcp                                                                                          
 	EnableAllProjectMCPServers                                                                  *bool                               `json:"enableAllProjectMcpServers,omitempty"`
@@ -740,7 +779,7 @@ type ClaudeCodeSettings struct {
 	VoiceEnabled                                                                                *bool                               `json:"voiceEnabled,omitempty"`
 	// Configuration for --worktree sessions. See                                                                                   
 	// https://code.claude.com/docs/en/settings#worktree-settings                                                                   
-	Worktree                                                                                    *Worktree                           `json:"worktree,omitempty"`
+	Worktree                                                                                    *WorktreeClass                      `json:"worktree,omitempty"`
 	// (Windows managed settings only) When true, Claude Code on WSL reads managed settings from                                    
 	// the Windows policy chain in addition to /etc/claude-code, with Windows sources taking                                        
 	// priority. Only honored when set in the HKLM registry key or C:\Program                                                       
@@ -1278,11 +1317,145 @@ type StrictKnownMarketplace struct {
 
 // Configuration for --worktree sessions. See
 // https://code.claude.com/docs/en/settings#worktree-settings
-type Worktree struct {
+type WorktreeClass struct {
 	// Directories to check out in each worktree via git sparse-checkout (cone mode). Only the         
 	// listed paths are written to disk, which is faster in large monorepos. See                       
 	// https://code.claude.com/docs/en/settings#worktree-settings                                      
 	SparsePaths                                                                               []string `json:"sparsePaths,omitempty"`
+}
+
+// YAML frontmatter for subagent .md files. Source:
+// https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields
+type ClaudeCodeAgentFrontmatter struct {
+	// Set to true to always run this subagent as a background task.                                                                  
+	Background                                                                                  *bool                                 `json:"background,omitempty"`
+	// Display color for the subagent in the task list and transcript.                                                                
+	Color                                                                                       *Color                                `json:"color,omitempty"`
+	// When Claude should delegate to this subagent.                                                                                  
+	Description                                                                                 string                                `json:"description"`
+	// Tools to deny, removed from inherited or specified list.                                                                       
+	DisallowedTools                                                                             *AgentsUnion                          `json:"disallowedTools"`
+	// Effort level when this subagent is active. Overrides the session effort level.                                                 
+	Effort                                                                                      *Effort                               `json:"effort,omitempty"`
+	// Lifecycle hooks scoped to this subagent. Ignored for plugin subagents.                                                         
+	Hooks                                                                                       map[string]interface{}                `json:"hooks,omitempty"`
+	// Auto-submitted as the first user turn when this agent runs as the main session agent (via                                      
+	// --agent or the agent setting). Commands and skills are processed.                                                              
+	InitialPrompt                                                                               *string                               `json:"initialPrompt,omitempty"`
+	// Set to 'worktree' to run in a temporary git worktree.                                                                          
+	Isolation                                                                                   *Isolation                            `json:"isolation,omitempty"`
+	// Maximum number of agentic turns before the subagent stops.                                                                     
+	MaxTurns                                                                                    *int64                                `json:"maxTurns,omitempty"`
+	// MCP servers available to this subagent. Each entry is a server name string or an inline                                        
+	// definition object. Ignored for plugin subagents.                                                                               
+	MCPServers                                                                                  *ClaudeCodeAgentFrontmatterMCPServers `json:"mcpServers"`
+	// Persistent memory scope. Enables cross-session learning.                                                                       
+	Memory                                                                                      *Memory                               `json:"memory,omitempty"`
+	// Model to use: 'sonnet', 'opus', 'haiku', a full model ID (e.g. 'claude-opus-4-7'), or                                          
+	// 'inherit'. Defaults to 'inherit'.                                                                                              
+	Model                                                                                       *string                               `json:"model,omitempty"`
+	// Unique identifier using lowercase letters and hyphens.                                                                         
+	Name                                                                                        string                                `json:"name"`
+	// Permission mode for the subagent. Ignored for plugin subagents.                                                                
+	PermissionMode                                                                              *PermissionMode                       `json:"permissionMode,omitempty"`
+	// Skills to preload into the subagent's context at startup.                                                                      
+	Skills                                                                                      *AgentsUnion                          `json:"skills"`
+	// Tools the subagent can use. Inherits all tools if omitted.                                                                     
+	Tools                                                                                       *AgentsUnion                          `json:"tools"`
+}
+
+type TentacledMCPServer struct {
+	Args    []string          `json:"args,omitempty"`
+	Command *string           `json:"command,omitempty"`
+	Env     map[string]string `json:"env,omitempty"`
+	Type    *PurpleType       `json:"type,omitempty"`
+	URL     *string           `json:"url,omitempty"`
+}
+
+type StickyMCPServer struct {
+	Args    []string          `json:"args,omitempty"`
+	Command *string           `json:"command,omitempty"`
+	Env     map[string]string `json:"env,omitempty"`
+	Type    *PurpleType       `json:"type,omitempty"`
+	URL     *string           `json:"url,omitempty"`
+}
+
+// Project-scoped MCP server configuration (.mcp.json). Source:
+// https://code.claude.com/docs/en/mcp#project-scope
+type ClaudeCodeMCPJSON struct {
+	// Map of MCP server names to their configurations.                    
+	MCPServers                                         map[string]MCPConfi `json:"mcpServers"`
+}
+
+// MCP server configuration. Exactly one transport must be specified: stdio (command) or
+// remote (url).
+//
+// Local stdio server. Runs as a child process.
+//
+// Remote server (http, sse, or ws). Connects to a URL.
+type MCPConfi struct {
+	// Command-line arguments. Supports ${VAR} expansion.                                                       
+	Args                                                                                      []string          `json:"args,omitempty"`
+	// Executable to run. Supports ${VAR} environment variable expansion.                                       
+	Command                                                                                   *string           `json:"command,omitempty"`
+	// Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}                  
+	// expansion.                                                                                               
+	//                                                                                                          
+	// Environment variables. Supports ${VAR} and ${VAR:-default} expansion.                                    
+	Env                                                                                       map[string]string `json:"env,omitempty"`
+	// Transport type. Optional for stdio servers (inferred from command).                                      
+	//                                                                                                          
+	// Transport type. 'streamable-http' is accepted as an alias for 'http'.                                    
+	Type                                                                                      *FluffyType       `json:"type,omitempty"`
+	// HTTP headers. Supports ${VAR} expansion for values.                                                      
+	Headers                                                                                   map[string]string `json:"headers,omitempty"`
+	// Server URL. Supports ${VAR} and ${VAR:-default} expansion.                                               
+	URL                                                                                       *string           `json:"url,omitempty"`
+}
+
+// YAML frontmatter for SKILL.md files. Source:
+// https://code.claude.com/docs/en/skills#frontmatter-reference
+type ClaudeCodeSkillFrontmatter struct {
+	// Which subagent type to use when context: fork is set. Options include built-in agents                           
+	// (Explore, Plan, general-purpose) or any custom subagent.                                                        
+	Agent                                                                                       *string                `json:"agent,omitempty"`
+	// Tools Claude can use without asking permission when this skill is active.                                       
+	AllowedTools                                                                                *AgentsUnion           `json:"allowed-tools"`
+	// Hint shown during autocomplete to indicate expected arguments. Example: '[issue-number]'                        
+	// or '[filename] [format]'.                                                                                       
+	ArgumentHint                                                                                *string                `json:"argument-hint,omitempty"`
+	// Named positional arguments for $name substitution in the skill content.                                         
+	Arguments                                                                                   *AgentsUnion           `json:"arguments"`
+	// Set to 'fork' to run in a forked subagent context.                                                              
+	Context                                                                                     *Context               `json:"context,omitempty"`
+	// What the skill does and when to use it. Claude uses this to decide when to apply the                            
+	// skill. Combined with when_to_use, truncated at 1,536 characters in the skill listing.                           
+	Description                                                                                 *string                `json:"description,omitempty"`
+	// Set to true to prevent Claude from automatically loading this skill. Use for workflows                          
+	// you want to trigger manually with /name.                                                                        
+	DisableModelInvocation                                                                      *bool                  `json:"disable-model-invocation,omitempty"`
+	// Effort level when this skill is active. Overrides the session effort level.                                     
+	Effort                                                                                      *Effort                `json:"effort,omitempty"`
+	// Hooks scoped to this skill's lifecycle. See                                                                     
+	// https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents                                                
+	Hooks                                                                                       map[string]interface{} `json:"hooks,omitempty"`
+	// Model to use when this skill is active. Accepts the same values as /model, or 'inherit'                         
+	// to keep the active model.                                                                                       
+	Model                                                                                       *string                `json:"model,omitempty"`
+	// Display name for the skill. If omitted, uses the directory name. Lowercase letters,                             
+	// numbers, and hyphens only (max 64 characters).                                                                  
+	Name                                                                                        *string                `json:"name,omitempty"`
+	// Glob patterns that limit when this skill is activated. When set, Claude loads the skill                         
+	// automatically only when working with files matching the patterns.                                               
+	Paths                                                                                       *AgentsUnion           `json:"paths"`
+	// Shell to use for !`command` and ```! blocks in this skill.                                                      
+	Shell                                                                                       *Shell                 `json:"shell,omitempty"`
+	// Set to false to hide from the / menu. Use for background knowledge users shouldn't invoke                       
+	// directly.                                                                                                       
+	UserInvocable                                                                               *bool                  `json:"user-invocable,omitempty"`
+	// Additional context for when Claude should invoke the skill, such as trigger phrases or                          
+	// example requests. Appended to description in the skill listing.                                                 
+	WhenToUse                                                                                   *string                `json:"when_to_use,omitempty"`
 }
 
 // Type of the configuration value
@@ -1305,6 +1478,8 @@ const (
 //
 // Shell interpreter for the command. "bash" uses the login shell (bash/zsh/sh);
 // "powershell" uses pwsh. Defaults to bash.
+//
+// Shell to use for !`command` and ```! blocks in this skill.
 type Shell string
 
 const (
@@ -1330,13 +1505,13 @@ const (
 	TransportStdio Transport = "stdio"
 )
 
-type MCPServerType string
+type PurpleType string
 
 const (
-	FluffyHTTP MCPServerType = "http"
-	SSE        MCPServerType = "sse"
-	TypeStdio  MCPServerType = "stdio"
-	Ws         MCPServerType = "ws"
+	FluffyHTTP  PurpleType = "http"
+	PurpleSSE   PurpleType = "sse"
+	PurpleStdio PurpleType = "stdio"
+	PurpleWs    PurpleType = "ws"
 )
 
 // Release channel to follow for updates. Use "stable" for a version that is typically about
@@ -1387,14 +1562,18 @@ const (
 // The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto
 // to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment
 // variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level
-type EffortLevel string
+//
+// Effort level when this subagent is active. Overrides the session effort level.
+//
+// Effort level when this skill is active. Overrides the session effort level.
+type Effort string
 
 const (
-	High   EffortLevel = "high"
-	Low    EffortLevel = "low"
-	Max    EffortLevel = "max"
-	Medium EffortLevel = "medium"
-	Xhigh  EffortLevel = "xhigh"
+	High   Effort = "high"
+	Low    Effort = "low"
+	Max    Effort = "max"
+	Medium Effort = "medium"
+	Xhigh  Effort = "xhigh"
 )
 
 type SourceSource string
@@ -1438,13 +1617,13 @@ const (
 type DefaultMode string
 
 const (
-	AcceptEdits        DefaultMode = "acceptEdits"
-	BypassPermissions  DefaultMode = "bypassPermissions"
-	DefaultModeAuto    DefaultMode = "auto"
-	DefaultModeDefault DefaultMode = "default"
-	Delegate           DefaultMode = "delegate"
-	DontAsk            DefaultMode = "dontAsk"
-	Plan               DefaultMode = "plan"
+	DefaultModeAcceptEdits       DefaultMode = "acceptEdits"
+	DefaultModeAuto              DefaultMode = "auto"
+	DefaultModeBypassPermissions DefaultMode = "bypassPermissions"
+	DefaultModeDefault           DefaultMode = "default"
+	DefaultModeDontAsk           DefaultMode = "dontAsk"
+	DefaultModePlan              DefaultMode = "plan"
+	Delegate                     DefaultMode = "delegate"
 )
 
 // How to combine custom verbs with default spinner verbs: 'append' adds custom verbs to the
@@ -1498,6 +1677,78 @@ const (
 	ViewModeDefault ViewMode = "default"
 )
 
+// Display color for the subagent in the task list and transcript.
+type Color string
+
+const (
+	Blue   Color = "blue"
+	Cyan   Color = "cyan"
+	Green  Color = "green"
+	Orange Color = "orange"
+	Pink   Color = "pink"
+	Purple Color = "purple"
+	Red    Color = "red"
+	Yellow Color = "yellow"
+)
+
+// Set to 'worktree' to run in a temporary git worktree.
+type Isolation string
+
+const (
+	Worktree Isolation = "worktree"
+)
+
+// Persistent memory scope. Enables cross-session learning.
+type Memory string
+
+const (
+	Local   Memory = "local"
+	Project Memory = "project"
+	User    Memory = "user"
+)
+
+// Permission mode for the subagent. Ignored for plugin subagents.
+type PermissionMode string
+
+const (
+	PermissionModeAcceptEdits       PermissionMode = "acceptEdits"
+	PermissionModeAuto              PermissionMode = "auto"
+	PermissionModeBypassPermissions PermissionMode = "bypassPermissions"
+	PermissionModeDefault           PermissionMode = "default"
+	PermissionModeDontAsk           PermissionMode = "dontAsk"
+	PermissionModePlan              PermissionMode = "plan"
+)
+
+// Transport type. 'streamable-http' is accepted as an alias for 'http'.
+type FluffyType string
+
+const (
+	FluffySSE      FluffyType = "sse"
+	FluffyStdio    FluffyType = "stdio"
+	FluffyWs       FluffyType = "ws"
+	StreamableHTTP FluffyType = "streamable-http"
+	TentacledHTTP  FluffyType = "http"
+)
+
+// Set to 'fork' to run in a forked subagent context.
+type Context string
+
+const (
+	Fork Context = "fork"
+)
+
+// Tools to deny, removed from inherited or specified list.
+//
+// Skills to preload into the subagent's context at startup.
+//
+// Tools the subagent can use. Inherits all tools if omitted.
+//
+// Tools Claude can use without asking permission when this skill is active.
+//
+// Named positional arguments for $name substitution in the skill content.
+//
+// Glob patterns that limit when this skill is activated. When set, Claude loads the skill
+// automatically only when working with files matching the patterns.
 type AgentsUnion struct {
 	String      *string
 	StringArray []string
@@ -1670,16 +1921,16 @@ func (x *LspServerElement) MarshalJSON() ([]byte, error) {
 	return marshalUnion(nil, nil, nil, x.String, false, nil, false, nil, x.LspServerLspServerMap != nil, x.LspServerLspServerMap, false, nil, false)
 }
 
-type MCPServers struct {
-	MCPServersMCPServerClassMap map[string]MCPServersMCPServerClass
-	String                      *string
-	UnionArray                  []MCPServerElement
+type ClaudeCodePluginManifestMCPServers struct {
+	FluffyMCPServerMap map[string]FluffyMCPServer
+	String             *string
+	UnionArray         []IndigoMCPServer
 }
 
-func (x *MCPServers) UnmarshalJSON(data []byte) error {
+func (x *ClaudeCodePluginManifestMCPServers) UnmarshalJSON(data []byte) error {
 	x.UnionArray = nil
-	x.MCPServersMCPServerClassMap = nil
-	object, err := unmarshalUnion(data, nil, nil, nil, &x.String, true, &x.UnionArray, false, nil, true, &x.MCPServersMCPServerClassMap, false, nil, false)
+	x.FluffyMCPServerMap = nil
+	object, err := unmarshalUnion(data, nil, nil, nil, &x.String, true, &x.UnionArray, false, nil, true, &x.FluffyMCPServerMap, false, nil, false)
 	if err != nil {
 		return err
 	}
@@ -1688,19 +1939,19 @@ func (x *MCPServers) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (x *MCPServers) MarshalJSON() ([]byte, error) {
-	return marshalUnion(nil, nil, nil, x.String, x.UnionArray != nil, x.UnionArray, false, nil, x.MCPServersMCPServerClassMap != nil, x.MCPServersMCPServerClassMap, false, nil, false)
+func (x *ClaudeCodePluginManifestMCPServers) MarshalJSON() ([]byte, error) {
+	return marshalUnion(nil, nil, nil, x.String, x.UnionArray != nil, x.UnionArray, false, nil, x.FluffyMCPServerMap != nil, x.FluffyMCPServerMap, false, nil, false)
 }
 
 // Array of MCP server configurations (paths, MCPB files, or inline definitions)
-type MCPServerElement struct {
-	MCPServerMCPServerMap map[string]MCPServerMCPServer
-	String                *string
+type IndigoMCPServer struct {
+	PurpleMCPServerMap map[string]PurpleMCPServer
+	String             *string
 }
 
-func (x *MCPServerElement) UnmarshalJSON(data []byte) error {
-	x.MCPServerMCPServerMap = nil
-	object, err := unmarshalUnion(data, nil, nil, nil, &x.String, false, nil, false, nil, true, &x.MCPServerMCPServerMap, false, nil, false)
+func (x *IndigoMCPServer) UnmarshalJSON(data []byte) error {
+	x.PurpleMCPServerMap = nil
+	object, err := unmarshalUnion(data, nil, nil, nil, &x.String, false, nil, false, nil, true, &x.PurpleMCPServerMap, false, nil, false)
 	if err != nil {
 		return err
 	}
@@ -1709,8 +1960,8 @@ func (x *MCPServerElement) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (x *MCPServerElement) MarshalJSON() ([]byte, error) {
-	return marshalUnion(nil, nil, nil, x.String, false, nil, false, nil, x.MCPServerMCPServerMap != nil, x.MCPServerMCPServerMap, false, nil, false)
+func (x *IndigoMCPServer) MarshalJSON() ([]byte, error) {
+	return marshalUnion(nil, nil, nil, x.String, false, nil, false, nil, x.PurpleMCPServerMap != nil, x.PurpleMCPServerMap, false, nil, false)
 }
 
 // Background watch scripts the host arms as persistent Monitor tasks (unsandboxed, same
@@ -1777,6 +2028,49 @@ func (x *StrictPluginOnlyCustomizationUnion) UnmarshalJSON(data []byte) error {
 
 func (x *StrictPluginOnlyCustomizationUnion) MarshalJSON() ([]byte, error) {
 	return marshalUnion(nil, nil, x.Bool, nil, x.EnumArray != nil, x.EnumArray, false, nil, false, nil, false, nil, false)
+}
+
+// MCP servers available to this subagent. Each entry is a server name string or an inline
+// definition object. Ignored for plugin subagents.
+type ClaudeCodeAgentFrontmatterMCPServers struct {
+	StickyMCPServerMap map[string]StickyMCPServer
+	UnionArray         []IndecentMCPServer
+}
+
+func (x *ClaudeCodeAgentFrontmatterMCPServers) UnmarshalJSON(data []byte) error {
+	x.UnionArray = nil
+	x.StickyMCPServerMap = nil
+	object, err := unmarshalUnion(data, nil, nil, nil, nil, true, &x.UnionArray, false, nil, true, &x.StickyMCPServerMap, false, nil, false)
+	if err != nil {
+		return err
+	}
+	if object {
+	}
+	return nil
+}
+
+func (x *ClaudeCodeAgentFrontmatterMCPServers) MarshalJSON() ([]byte, error) {
+	return marshalUnion(nil, nil, nil, nil, x.UnionArray != nil, x.UnionArray, false, nil, x.StickyMCPServerMap != nil, x.StickyMCPServerMap, false, nil, false)
+}
+
+type IndecentMCPServer struct {
+	String                *string
+	TentacledMCPServerMap map[string]TentacledMCPServer
+}
+
+func (x *IndecentMCPServer) UnmarshalJSON(data []byte) error {
+	x.TentacledMCPServerMap = nil
+	object, err := unmarshalUnion(data, nil, nil, nil, &x.String, false, nil, false, nil, true, &x.TentacledMCPServerMap, false, nil, false)
+	if err != nil {
+		return err
+	}
+	if object {
+	}
+	return nil
+}
+
+func (x *IndecentMCPServer) MarshalJSON() ([]byte, error) {
+	return marshalUnion(nil, nil, nil, x.String, false, nil, false, nil, x.TentacledMCPServerMap != nil, x.TentacledMCPServerMap, false, nil, false)
 }
 
 func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {

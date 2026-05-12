@@ -1,0 +1,17 @@
+{
+  "name": "browser-tester",
+  "description": "Tests features in a real browser using Playwright",
+  "tools": ["Read", "Bash", "Grep"],
+  "model": "sonnet",
+  "color": "green",
+  "mcpServers": [
+    {
+      "playwright": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@playwright/mcp@latest"]
+      }
+    },
+    "github"
+  ]
+}

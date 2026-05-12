@@ -311,6 +311,8 @@ class Shell(Enum):
     
     Shell interpreter for the command. "bash" uses the login shell (bash/zsh/sh);
     "powershell" uses pwsh. Defaults to bash.
+    
+    Shell to use for !`command` and ```! blocks in this skill.
     """
     BASH = "bash"
     POWERSHELL = "powershell"
@@ -938,24 +940,24 @@ class PurpleOauth:
         return result
 
 
-class MCPServerType(Enum):
+class PurpleType(Enum):
     HTTP = "http"
     SSE = "sse"
     STDIO = "stdio"
     WS = "ws"
 
 
-class MCPServerMCPServer:
+class PurpleMCPServer:
     args: Optional[List[str]]
     command: Optional[str]
     env: Optional[Dict[str, str]]
-    type: Optional[MCPServerType]
+    type: Optional[PurpleType]
     headers: Optional[Dict[str, str]]
     headers_helper: Optional[str]
     oauth: Optional[PurpleOauth]
     url: Optional[str]
 
-    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[MCPServerType], headers: Optional[Dict[str, str]], headers_helper: Optional[str], oauth: Optional[PurpleOauth], url: Optional[str]) -> None:
+    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[PurpleType], headers: Optional[Dict[str, str]], headers_helper: Optional[str], oauth: Optional[PurpleOauth], url: Optional[str]) -> None:
         self.args = args
         self.command = command
         self.env = env
@@ -966,17 +968,17 @@ class MCPServerMCPServer:
         self.url = url
 
     @staticmethod
-    def from_dict(obj: Any) -> 'MCPServerMCPServer':
+    def from_dict(obj: Any) -> 'PurpleMCPServer':
         assert isinstance(obj, dict)
         args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
         command = from_union([from_str, from_none], obj.get("command"))
         env = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("env"))
-        type = from_union([MCPServerType, from_none], obj.get("type"))
+        type = from_union([PurpleType, from_none], obj.get("type"))
         headers = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("headers"))
         headers_helper = from_union([from_str, from_none], obj.get("headersHelper"))
         oauth = from_union([PurpleOauth.from_dict, from_none], obj.get("oauth"))
         url = from_union([from_str, from_none], obj.get("url"))
-        return MCPServerMCPServer(args, command, env, type, headers, headers_helper, oauth, url)
+        return PurpleMCPServer(args, command, env, type, headers, headers_helper, oauth, url)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -987,7 +989,7 @@ class MCPServerMCPServer:
         if self.env is not None:
             result["env"] = from_union([lambda x: from_dict(from_str, x), from_none], self.env)
         if self.type is not None:
-            result["type"] = from_union([lambda x: to_enum(MCPServerType, x), from_none], self.type)
+            result["type"] = from_union([lambda x: to_enum(PurpleType, x), from_none], self.type)
         if self.headers is not None:
             result["headers"] = from_union([lambda x: from_dict(from_str, x), from_none], self.headers)
         if self.headers_helper is not None:
@@ -1038,17 +1040,17 @@ class FluffyOauth:
         return result
 
 
-class MCPServersMCPServerClass:
+class FluffyMCPServer:
     args: Optional[List[str]]
     command: Optional[str]
     env: Optional[Dict[str, str]]
-    type: Optional[MCPServerType]
+    type: Optional[PurpleType]
     headers: Optional[Dict[str, str]]
     headers_helper: Optional[str]
     oauth: Optional[FluffyOauth]
     url: Optional[str]
 
-    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[MCPServerType], headers: Optional[Dict[str, str]], headers_helper: Optional[str], oauth: Optional[FluffyOauth], url: Optional[str]) -> None:
+    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[PurpleType], headers: Optional[Dict[str, str]], headers_helper: Optional[str], oauth: Optional[FluffyOauth], url: Optional[str]) -> None:
         self.args = args
         self.command = command
         self.env = env
@@ -1059,17 +1061,17 @@ class MCPServersMCPServerClass:
         self.url = url
 
     @staticmethod
-    def from_dict(obj: Any) -> 'MCPServersMCPServerClass':
+    def from_dict(obj: Any) -> 'FluffyMCPServer':
         assert isinstance(obj, dict)
         args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
         command = from_union([from_str, from_none], obj.get("command"))
         env = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("env"))
-        type = from_union([MCPServerType, from_none], obj.get("type"))
+        type = from_union([PurpleType, from_none], obj.get("type"))
         headers = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("headers"))
         headers_helper = from_union([from_str, from_none], obj.get("headersHelper"))
         oauth = from_union([FluffyOauth.from_dict, from_none], obj.get("oauth"))
         url = from_union([from_str, from_none], obj.get("url"))
-        return MCPServersMCPServerClass(args, command, env, type, headers, headers_helper, oauth, url)
+        return FluffyMCPServer(args, command, env, type, headers, headers_helper, oauth, url)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -1080,7 +1082,7 @@ class MCPServersMCPServerClass:
         if self.env is not None:
             result["env"] = from_union([lambda x: from_dict(from_str, x), from_none], self.env)
         if self.type is not None:
-            result["type"] = from_union([lambda x: to_enum(MCPServerType, x), from_none], self.type)
+            result["type"] = from_union([lambda x: to_enum(PurpleType, x), from_none], self.type)
         if self.headers is not None:
             result["headers"] = from_union([lambda x: from_dict(from_str, x), from_none], self.headers)
         if self.headers_helper is not None:
@@ -1247,7 +1249,7 @@ class ClaudeCodePluginManifest:
     """SPDX license identifier (e.g., MIT, Apache-2.0)"""
 
     lsp_servers: Optional[Union[str, Dict[str, LspServersLspServerClass], List[Union[str, Dict[str, LspServerLspServer]]]]]
-    mcp_servers: Optional[Union[Dict[str, MCPServersMCPServerClass], List[Union[Dict[str, MCPServerMCPServer], str]], str]]
+    mcp_servers: Optional[Union[Dict[str, FluffyMCPServer], List[Union[Dict[str, PurpleMCPServer], str]], str]]
     monitors: Optional[Union[str, List[Monitor]]]
     """Background watch scripts the host arms as persistent Monitor tasks (unsandboxed, same
     trust tier as hooks) so plugins need not instruct the model to arm them. When omitted,
@@ -1275,7 +1277,7 @@ class ClaudeCodePluginManifest:
     version: Optional[str]
     """Semantic version (e.g., 1.2.3) following semver.org specification"""
 
-    def __init__(self, schema: Optional[str], agents: Optional[Union[str, List[str]]], author: Optional[Author], channels: Optional[List[Channel]], commands: Optional[Union[List[str], Dict[str, Command], str]], dependencies: Optional[List[Union[DependencyClass, str]]], description: Optional[str], homepage: Optional[str], hooks: Optional[Union[str, Dict[str, List[HooksHookClass]], List[Union[str, Dict[str, List[PurpleHook]]]]]], keywords: Optional[List[str]], license: Optional[str], lsp_servers: Optional[Union[str, Dict[str, LspServersLspServerClass], List[Union[str, Dict[str, LspServerLspServer]]]]], mcp_servers: Optional[Union[Dict[str, MCPServersMCPServerClass], List[Union[Dict[str, MCPServerMCPServer], str]], str]], monitors: Optional[Union[str, List[Monitor]]], name: str, output_styles: Optional[Union[List[str], str]], repository: Optional[str], settings: Optional[Dict[str, Any]], skills: Optional[Union[List[str], str]], themes: Optional[Union[List[str], str]], user_config: Optional[Dict[str, ClaudeCodePluginManifestUserConfig]], version: Optional[str]) -> None:
+    def __init__(self, schema: Optional[str], agents: Optional[Union[str, List[str]]], author: Optional[Author], channels: Optional[List[Channel]], commands: Optional[Union[List[str], Dict[str, Command], str]], dependencies: Optional[List[Union[DependencyClass, str]]], description: Optional[str], homepage: Optional[str], hooks: Optional[Union[str, Dict[str, List[HooksHookClass]], List[Union[str, Dict[str, List[PurpleHook]]]]]], keywords: Optional[List[str]], license: Optional[str], lsp_servers: Optional[Union[str, Dict[str, LspServersLspServerClass], List[Union[str, Dict[str, LspServerLspServer]]]]], mcp_servers: Optional[Union[Dict[str, FluffyMCPServer], List[Union[Dict[str, PurpleMCPServer], str]], str]], monitors: Optional[Union[str, List[Monitor]]], name: str, output_styles: Optional[Union[List[str], str]], repository: Optional[str], settings: Optional[Dict[str, Any]], skills: Optional[Union[List[str], str]], themes: Optional[Union[List[str], str]], user_config: Optional[Dict[str, ClaudeCodePluginManifestUserConfig]], version: Optional[str]) -> None:
         self.schema = schema
         self.agents = agents
         self.author = author
@@ -1314,7 +1316,7 @@ class ClaudeCodePluginManifest:
         keywords = from_union([lambda x: from_list(from_str, x), from_none], obj.get("keywords"))
         license = from_union([from_str, from_none], obj.get("license"))
         lsp_servers = from_union([from_str, lambda x: from_dict(LspServersLspServerClass.from_dict, x), lambda x: from_list(lambda x: from_union([from_str, lambda x: from_dict(LspServerLspServer.from_dict, x)], x), x), from_none], obj.get("lspServers"))
-        mcp_servers = from_union([lambda x: from_dict(MCPServersMCPServerClass.from_dict, x), lambda x: from_list(lambda x: from_union([lambda x: from_dict(MCPServerMCPServer.from_dict, x), from_str], x), x), from_str, from_none], obj.get("mcpServers"))
+        mcp_servers = from_union([lambda x: from_dict(FluffyMCPServer.from_dict, x), lambda x: from_list(lambda x: from_union([lambda x: from_dict(PurpleMCPServer.from_dict, x), from_str], x), x), from_str, from_none], obj.get("mcpServers"))
         monitors = from_union([from_str, lambda x: from_list(Monitor.from_dict, x), from_none], obj.get("monitors"))
         name = from_str(obj.get("name"))
         output_styles = from_union([lambda x: from_list(from_str, x), from_str, from_none], obj.get("outputStyles"))
@@ -1353,7 +1355,7 @@ class ClaudeCodePluginManifest:
         if self.lsp_servers is not None:
             result["lspServers"] = from_union([from_str, lambda x: from_dict(lambda x: to_class(LspServersLspServerClass, x), x), lambda x: from_list(lambda x: from_union([from_str, lambda x: from_dict(lambda x: to_class(LspServerLspServer, x), x)], x), x), from_none], self.lsp_servers)
         if self.mcp_servers is not None:
-            result["mcpServers"] = from_union([lambda x: from_dict(lambda x: to_class(MCPServersMCPServerClass, x), x), lambda x: from_list(lambda x: from_union([lambda x: from_dict(lambda x: to_class(MCPServerMCPServer, x), x), from_str], x), x), from_str, from_none], self.mcp_servers)
+            result["mcpServers"] = from_union([lambda x: from_dict(lambda x: to_class(FluffyMCPServer, x), x), lambda x: from_list(lambda x: from_union([lambda x: from_dict(lambda x: to_class(PurpleMCPServer, x), x), from_str], x), x), from_str, from_none], self.mcp_servers)
         if self.monitors is not None:
             result["monitors"] = from_union([from_str, lambda x: from_list(lambda x: to_class(Monitor, x), x), from_none], self.monitors)
         result["name"] = from_str(self.name)
@@ -1651,7 +1653,7 @@ class Disable(Enum):
     DISABLE = "disable"
 
 
-class EffortLevel(Enum):
+class Effort(Enum):
     """Persist adaptive reasoning effort across sessions. Effort is supported on Opus 4.7, Opus
     4.6, and Sonnet 4.6. Opus 4.7 supports low/medium/high/xhigh/max (xhigh sits between high
     and max, added in v2.1.111); Opus 4.6 and Sonnet 4.6 support low/medium/high/max (xhigh
@@ -1660,6 +1662,10 @@ class EffortLevel(Enum):
     The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto
     to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment
     variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level
+    
+    Effort level when this subagent is active. Overrides the session effort level.
+    
+    Effort level when this skill is active. Overrides the session effort level.
     """
     HIGH = "high"
     LOW = "low"
@@ -3100,7 +3106,7 @@ class ClaudeCodeSettings:
     and managed skills are not affected. Most useful in managed settings where users cannot
     override it. See https://code.claude.com/docs/en/settings#available-settings
     """
-    effort_level: Optional[EffortLevel]
+    effort_level: Optional[Effort]
     """Persist adaptive reasoning effort across sessions. Effort is supported on Opus 4.7, Opus
     4.6, and Sonnet 4.6. Opus 4.7 supports low/medium/high/xhigh/max (xhigh sits between high
     and max, added in v2.1.111); Opus 4.6 and Sonnet 4.6 support low/medium/high/max (xhigh
@@ -3346,7 +3352,7 @@ class ClaudeCodeSettings:
     https://code.claude.com/docs/en/settings#available-settings
     """
 
-    def __init__(self, schema: Optional[str], agent: Optional[str], allowed_channel_plugins: Optional[List[str]], allowed_http_hook_urls: Optional[List[str]], allowed_mcp_servers: Optional[List[AllowedMCPServer]], allow_managed_hooks_only: Optional[bool], allow_managed_mcp_servers_only: Optional[bool], allow_managed_permission_rules_only: Optional[bool], always_thinking_enabled: Optional[bool], api_key_helper: Optional[str], attribution: Optional[Attribution], auto_memory_directory: Optional[str], auto_memory_enabled: Optional[bool], auto_mode: Optional[AutoMode], auto_updates_channel: Optional[AutoUpdatesChannel], available_models: Optional[List[str]], aws_auth_refresh: Optional[str], aws_credential_export: Optional[str], blocked_marketplaces: Optional[List[BlockedMarketplace]], channels_enabled: Optional[bool], claude_md_excludes: Optional[List[str]], cleanup_period_days: Optional[int], company_announcements: Optional[List[str]], default_shell: Optional[Shell], denied_mcp_servers: Optional[List[DeniedMCPServer]], disable_all_hooks: Optional[bool], disable_deep_link_registration: Optional[Disable], disabled_mcpjson_servers: Optional[List[str]], disable_skill_shell_execution: Optional[bool], effort_level: Optional[EffortLevel], enable_all_project_mcp_servers: Optional[bool], enabled_mcpjson_servers: Optional[List[str]], enabled_plugins: Optional[Dict[str, Any]], env: Optional[Dict[str, str]], extra_known_marketplaces: Optional[Dict[str, ExtraKnownMarketplace]], fast_mode: Optional[bool], fast_mode_per_session_opt_in: Optional[bool], feedback_survey_rate: Optional[float], file_suggestion: Optional[FileSuggestion], force_login_method: Optional[ForceLoginMethod], force_login_org_uuid: Optional[str], force_remote_settings_refresh: Optional[bool], hooks: Optional[HooksClass], http_hook_allowed_env_vars: Optional[List[str]], include_co_authored_by: Optional[bool], include_git_instructions: Optional[bool], language: Optional[str], minimum_version: Optional[str], model: Optional[str], model_overrides: Optional[Dict[str, str]], otel_headers_helper: Optional[str], output_style: Optional[str], permissions: Optional[Permissions], plans_directory: Optional[str], plugin_configs: Optional[Dict[str, PluginConfig]], plugin_trust_message: Optional[str], prefers_reduced_motion: Optional[bool], pr_url_template: Optional[str], respect_gitignore: Optional[bool], sandbox: Optional[Sandbox], show_clear_context_on_plan_accept: Optional[bool], show_thinking_summaries: Optional[bool], show_turn_duration: Optional[bool], skip_dangerous_mode_permission_prompt: Optional[bool], skipped_marketplaces: Optional[List[str]], skipped_plugins: Optional[List[str]], skip_web_fetch_preflight: Optional[bool], spinner_tips_enabled: Optional[bool], spinner_tips_override: Optional[SpinnerTipsOverride], spinner_verbs: Optional[SpinnerVerbs], status_line: Optional[StatusLine], strict_known_marketplaces: Optional[List[StrictKnownMarketplace]], strict_plugin_only_customization: Optional[Union[bool, List[StrictPluginOnlyCustomizationElement]]], teammate_mode: Optional[TeammateMode], terminal_progress_bar_enabled: Optional[bool], tui: Optional[Tui], use_auto_mode_during_plan: Optional[bool], view_mode: Optional[ViewMode], voice_enabled: Optional[bool], worktree: Optional[Worktree], wsl_inherits_windows_settings: Optional[bool]) -> None:
+    def __init__(self, schema: Optional[str], agent: Optional[str], allowed_channel_plugins: Optional[List[str]], allowed_http_hook_urls: Optional[List[str]], allowed_mcp_servers: Optional[List[AllowedMCPServer]], allow_managed_hooks_only: Optional[bool], allow_managed_mcp_servers_only: Optional[bool], allow_managed_permission_rules_only: Optional[bool], always_thinking_enabled: Optional[bool], api_key_helper: Optional[str], attribution: Optional[Attribution], auto_memory_directory: Optional[str], auto_memory_enabled: Optional[bool], auto_mode: Optional[AutoMode], auto_updates_channel: Optional[AutoUpdatesChannel], available_models: Optional[List[str]], aws_auth_refresh: Optional[str], aws_credential_export: Optional[str], blocked_marketplaces: Optional[List[BlockedMarketplace]], channels_enabled: Optional[bool], claude_md_excludes: Optional[List[str]], cleanup_period_days: Optional[int], company_announcements: Optional[List[str]], default_shell: Optional[Shell], denied_mcp_servers: Optional[List[DeniedMCPServer]], disable_all_hooks: Optional[bool], disable_deep_link_registration: Optional[Disable], disabled_mcpjson_servers: Optional[List[str]], disable_skill_shell_execution: Optional[bool], effort_level: Optional[Effort], enable_all_project_mcp_servers: Optional[bool], enabled_mcpjson_servers: Optional[List[str]], enabled_plugins: Optional[Dict[str, Any]], env: Optional[Dict[str, str]], extra_known_marketplaces: Optional[Dict[str, ExtraKnownMarketplace]], fast_mode: Optional[bool], fast_mode_per_session_opt_in: Optional[bool], feedback_survey_rate: Optional[float], file_suggestion: Optional[FileSuggestion], force_login_method: Optional[ForceLoginMethod], force_login_org_uuid: Optional[str], force_remote_settings_refresh: Optional[bool], hooks: Optional[HooksClass], http_hook_allowed_env_vars: Optional[List[str]], include_co_authored_by: Optional[bool], include_git_instructions: Optional[bool], language: Optional[str], minimum_version: Optional[str], model: Optional[str], model_overrides: Optional[Dict[str, str]], otel_headers_helper: Optional[str], output_style: Optional[str], permissions: Optional[Permissions], plans_directory: Optional[str], plugin_configs: Optional[Dict[str, PluginConfig]], plugin_trust_message: Optional[str], prefers_reduced_motion: Optional[bool], pr_url_template: Optional[str], respect_gitignore: Optional[bool], sandbox: Optional[Sandbox], show_clear_context_on_plan_accept: Optional[bool], show_thinking_summaries: Optional[bool], show_turn_duration: Optional[bool], skip_dangerous_mode_permission_prompt: Optional[bool], skipped_marketplaces: Optional[List[str]], skipped_plugins: Optional[List[str]], skip_web_fetch_preflight: Optional[bool], spinner_tips_enabled: Optional[bool], spinner_tips_override: Optional[SpinnerTipsOverride], spinner_verbs: Optional[SpinnerVerbs], status_line: Optional[StatusLine], strict_known_marketplaces: Optional[List[StrictKnownMarketplace]], strict_plugin_only_customization: Optional[Union[bool, List[StrictPluginOnlyCustomizationElement]]], teammate_mode: Optional[TeammateMode], terminal_progress_bar_enabled: Optional[bool], tui: Optional[Tui], use_auto_mode_during_plan: Optional[bool], view_mode: Optional[ViewMode], voice_enabled: Optional[bool], worktree: Optional[Worktree], wsl_inherits_windows_settings: Optional[bool]) -> None:
         self.schema = schema
         self.agent = agent
         self.allowed_channel_plugins = allowed_channel_plugins
@@ -3461,7 +3467,7 @@ class ClaudeCodeSettings:
         disable_deep_link_registration = from_union([Disable, from_none], obj.get("disableDeepLinkRegistration"))
         disabled_mcpjson_servers = from_union([lambda x: from_list(from_str, x), from_none], obj.get("disabledMcpjsonServers"))
         disable_skill_shell_execution = from_union([from_bool, from_none], obj.get("disableSkillShellExecution"))
-        effort_level = from_union([EffortLevel, from_none], obj.get("effortLevel"))
+        effort_level = from_union([Effort, from_none], obj.get("effortLevel"))
         enable_all_project_mcp_servers = from_union([from_bool, from_none], obj.get("enableAllProjectMcpServers"))
         enabled_mcpjson_servers = from_union([lambda x: from_list(from_str, x), from_none], obj.get("enabledMcpjsonServers"))
         enabled_plugins = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("enabledPlugins"))
@@ -3576,7 +3582,7 @@ class ClaudeCodeSettings:
         if self.disable_skill_shell_execution is not None:
             result["disableSkillShellExecution"] = from_union([from_bool, from_none], self.disable_skill_shell_execution)
         if self.effort_level is not None:
-            result["effortLevel"] = from_union([lambda x: to_enum(EffortLevel, x), from_none], self.effort_level)
+            result["effortLevel"] = from_union([lambda x: to_enum(Effort, x), from_none], self.effort_level)
         if self.enable_all_project_mcp_servers is not None:
             result["enableAllProjectMcpServers"] = from_union([from_bool, from_none], self.enable_all_project_mcp_servers)
         if self.enabled_mcpjson_servers is not None:
@@ -3682,6 +3688,488 @@ class ClaudeCodeSettings:
         return result
 
 
+class Color(Enum):
+    """Display color for the subagent in the task list and transcript."""
+
+    BLUE = "blue"
+    CYAN = "cyan"
+    GREEN = "green"
+    ORANGE = "orange"
+    PINK = "pink"
+    PURPLE = "purple"
+    RED = "red"
+    YELLOW = "yellow"
+
+
+class Isolation(Enum):
+    """Set to 'worktree' to run in a temporary git worktree."""
+
+    WORKTREE = "worktree"
+
+
+class TentacledMCPServer:
+    args: Optional[List[str]]
+    command: Optional[str]
+    env: Optional[Dict[str, str]]
+    type: Optional[PurpleType]
+    url: Optional[str]
+
+    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[PurpleType], url: Optional[str]) -> None:
+        self.args = args
+        self.command = command
+        self.env = env
+        self.type = type
+        self.url = url
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'TentacledMCPServer':
+        assert isinstance(obj, dict)
+        args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
+        command = from_union([from_str, from_none], obj.get("command"))
+        env = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("env"))
+        type = from_union([PurpleType, from_none], obj.get("type"))
+        url = from_union([from_str, from_none], obj.get("url"))
+        return TentacledMCPServer(args, command, env, type, url)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.args is not None:
+            result["args"] = from_union([lambda x: from_list(from_str, x), from_none], self.args)
+        if self.command is not None:
+            result["command"] = from_union([from_str, from_none], self.command)
+        if self.env is not None:
+            result["env"] = from_union([lambda x: from_dict(from_str, x), from_none], self.env)
+        if self.type is not None:
+            result["type"] = from_union([lambda x: to_enum(PurpleType, x), from_none], self.type)
+        if self.url is not None:
+            result["url"] = from_union([from_str, from_none], self.url)
+        return result
+
+
+class StickyMCPServer:
+    args: Optional[List[str]]
+    command: Optional[str]
+    env: Optional[Dict[str, str]]
+    type: Optional[PurpleType]
+    url: Optional[str]
+
+    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[PurpleType], url: Optional[str]) -> None:
+        self.args = args
+        self.command = command
+        self.env = env
+        self.type = type
+        self.url = url
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'StickyMCPServer':
+        assert isinstance(obj, dict)
+        args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
+        command = from_union([from_str, from_none], obj.get("command"))
+        env = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("env"))
+        type = from_union([PurpleType, from_none], obj.get("type"))
+        url = from_union([from_str, from_none], obj.get("url"))
+        return StickyMCPServer(args, command, env, type, url)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.args is not None:
+            result["args"] = from_union([lambda x: from_list(from_str, x), from_none], self.args)
+        if self.command is not None:
+            result["command"] = from_union([from_str, from_none], self.command)
+        if self.env is not None:
+            result["env"] = from_union([lambda x: from_dict(from_str, x), from_none], self.env)
+        if self.type is not None:
+            result["type"] = from_union([lambda x: to_enum(PurpleType, x), from_none], self.type)
+        if self.url is not None:
+            result["url"] = from_union([from_str, from_none], self.url)
+        return result
+
+
+class Memory(Enum):
+    """Persistent memory scope. Enables cross-session learning."""
+
+    LOCAL = "local"
+    PROJECT = "project"
+    USER = "user"
+
+
+class PermissionMode(Enum):
+    """Permission mode for the subagent. Ignored for plugin subagents."""
+
+    ACCEPT_EDITS = "acceptEdits"
+    AUTO = "auto"
+    BYPASS_PERMISSIONS = "bypassPermissions"
+    DEFAULT = "default"
+    DONT_ASK = "dontAsk"
+    PLAN = "plan"
+
+
+class ClaudeCodeAgentFrontmatter:
+    """YAML frontmatter for subagent .md files. Source:
+    https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields
+    """
+    background: Optional[bool]
+    """Set to true to always run this subagent as a background task."""
+
+    color: Optional[Color]
+    """Display color for the subagent in the task list and transcript."""
+
+    description: str
+    """When Claude should delegate to this subagent."""
+
+    disallowed_tools: Optional[Union[str, List[str]]]
+    """Tools to deny, removed from inherited or specified list."""
+
+    effort: Optional[Effort]
+    """Effort level when this subagent is active. Overrides the session effort level."""
+
+    hooks: Optional[Dict[str, Any]]
+    """Lifecycle hooks scoped to this subagent. Ignored for plugin subagents."""
+
+    initial_prompt: Optional[str]
+    """Auto-submitted as the first user turn when this agent runs as the main session agent (via
+    --agent or the agent setting). Commands and skills are processed.
+    """
+    isolation: Optional[Isolation]
+    """Set to 'worktree' to run in a temporary git worktree."""
+
+    max_turns: Optional[int]
+    """Maximum number of agentic turns before the subagent stops."""
+
+    mcp_servers: Optional[Union[List[Union[Dict[str, TentacledMCPServer], str]], Dict[str, StickyMCPServer]]]
+    """MCP servers available to this subagent. Each entry is a server name string or an inline
+    definition object. Ignored for plugin subagents.
+    """
+    memory: Optional[Memory]
+    """Persistent memory scope. Enables cross-session learning."""
+
+    model: Optional[str]
+    """Model to use: 'sonnet', 'opus', 'haiku', a full model ID (e.g. 'claude-opus-4-7'), or
+    'inherit'. Defaults to 'inherit'.
+    """
+    name: str
+    """Unique identifier using lowercase letters and hyphens."""
+
+    permission_mode: Optional[PermissionMode]
+    """Permission mode for the subagent. Ignored for plugin subagents."""
+
+    skills: Optional[Union[str, List[str]]]
+    """Skills to preload into the subagent's context at startup."""
+
+    tools: Optional[Union[str, List[str]]]
+    """Tools the subagent can use. Inherits all tools if omitted."""
+
+    def __init__(self, background: Optional[bool], color: Optional[Color], description: str, disallowed_tools: Optional[Union[str, List[str]]], effort: Optional[Effort], hooks: Optional[Dict[str, Any]], initial_prompt: Optional[str], isolation: Optional[Isolation], max_turns: Optional[int], mcp_servers: Optional[Union[List[Union[Dict[str, TentacledMCPServer], str]], Dict[str, StickyMCPServer]]], memory: Optional[Memory], model: Optional[str], name: str, permission_mode: Optional[PermissionMode], skills: Optional[Union[str, List[str]]], tools: Optional[Union[str, List[str]]]) -> None:
+        self.background = background
+        self.color = color
+        self.description = description
+        self.disallowed_tools = disallowed_tools
+        self.effort = effort
+        self.hooks = hooks
+        self.initial_prompt = initial_prompt
+        self.isolation = isolation
+        self.max_turns = max_turns
+        self.mcp_servers = mcp_servers
+        self.memory = memory
+        self.model = model
+        self.name = name
+        self.permission_mode = permission_mode
+        self.skills = skills
+        self.tools = tools
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'ClaudeCodeAgentFrontmatter':
+        assert isinstance(obj, dict)
+        background = from_union([from_bool, from_none], obj.get("background"))
+        color = from_union([Color, from_none], obj.get("color"))
+        description = from_str(obj.get("description"))
+        disallowed_tools = from_union([from_str, lambda x: from_list(from_str, x), from_none], obj.get("disallowedTools"))
+        effort = from_union([Effort, from_none], obj.get("effort"))
+        hooks = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("hooks"))
+        initial_prompt = from_union([from_str, from_none], obj.get("initialPrompt"))
+        isolation = from_union([Isolation, from_none], obj.get("isolation"))
+        max_turns = from_union([from_int, from_none], obj.get("maxTurns"))
+        mcp_servers = from_union([lambda x: from_list(lambda x: from_union([lambda x: from_dict(TentacledMCPServer.from_dict, x), from_str], x), x), lambda x: from_dict(StickyMCPServer.from_dict, x), from_none], obj.get("mcpServers"))
+        memory = from_union([Memory, from_none], obj.get("memory"))
+        model = from_union([from_str, from_none], obj.get("model"))
+        name = from_str(obj.get("name"))
+        permission_mode = from_union([PermissionMode, from_none], obj.get("permissionMode"))
+        skills = from_union([from_str, lambda x: from_list(from_str, x), from_none], obj.get("skills"))
+        tools = from_union([from_str, lambda x: from_list(from_str, x), from_none], obj.get("tools"))
+        return ClaudeCodeAgentFrontmatter(background, color, description, disallowed_tools, effort, hooks, initial_prompt, isolation, max_turns, mcp_servers, memory, model, name, permission_mode, skills, tools)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.background is not None:
+            result["background"] = from_union([from_bool, from_none], self.background)
+        if self.color is not None:
+            result["color"] = from_union([lambda x: to_enum(Color, x), from_none], self.color)
+        result["description"] = from_str(self.description)
+        if self.disallowed_tools is not None:
+            result["disallowedTools"] = from_union([from_str, lambda x: from_list(from_str, x), from_none], self.disallowed_tools)
+        if self.effort is not None:
+            result["effort"] = from_union([lambda x: to_enum(Effort, x), from_none], self.effort)
+        if self.hooks is not None:
+            result["hooks"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.hooks)
+        if self.initial_prompt is not None:
+            result["initialPrompt"] = from_union([from_str, from_none], self.initial_prompt)
+        if self.isolation is not None:
+            result["isolation"] = from_union([lambda x: to_enum(Isolation, x), from_none], self.isolation)
+        if self.max_turns is not None:
+            result["maxTurns"] = from_union([from_int, from_none], self.max_turns)
+        if self.mcp_servers is not None:
+            result["mcpServers"] = from_union([lambda x: from_list(lambda x: from_union([lambda x: from_dict(lambda x: to_class(TentacledMCPServer, x), x), from_str], x), x), lambda x: from_dict(lambda x: to_class(StickyMCPServer, x), x), from_none], self.mcp_servers)
+        if self.memory is not None:
+            result["memory"] = from_union([lambda x: to_enum(Memory, x), from_none], self.memory)
+        if self.model is not None:
+            result["model"] = from_union([from_str, from_none], self.model)
+        result["name"] = from_str(self.name)
+        if self.permission_mode is not None:
+            result["permissionMode"] = from_union([lambda x: to_enum(PermissionMode, x), from_none], self.permission_mode)
+        if self.skills is not None:
+            result["skills"] = from_union([from_str, lambda x: from_list(from_str, x), from_none], self.skills)
+        if self.tools is not None:
+            result["tools"] = from_union([from_str, lambda x: from_list(from_str, x), from_none], self.tools)
+        return result
+
+
+class FluffyType(Enum):
+    """Transport type. 'streamable-http' is accepted as an alias for 'http'."""
+
+    HTTP = "http"
+    SSE = "sse"
+    STDIO = "stdio"
+    STREAMABLE_HTTP = "streamable-http"
+    WS = "ws"
+
+
+class MCPConfi:
+    """MCP server configuration. Exactly one transport must be specified: stdio (command) or
+    remote (url).
+    
+    Local stdio server. Runs as a child process.
+    
+    Remote server (http, sse, or ws). Connects to a URL.
+    """
+    args: Optional[List[str]]
+    """Command-line arguments. Supports ${VAR} expansion."""
+
+    command: Optional[str]
+    """Executable to run. Supports ${VAR} environment variable expansion."""
+
+    env: Optional[Dict[str, str]]
+    """Environment variables passed to the server process. Supports ${VAR} and ${VAR:-default}
+    expansion.
+    
+    Environment variables. Supports ${VAR} and ${VAR:-default} expansion.
+    """
+    type: Optional[FluffyType]
+    """Transport type. Optional for stdio servers (inferred from command).
+    
+    Transport type. 'streamable-http' is accepted as an alias for 'http'.
+    """
+    headers: Optional[Dict[str, str]]
+    """HTTP headers. Supports ${VAR} expansion for values."""
+
+    url: Optional[str]
+    """Server URL. Supports ${VAR} and ${VAR:-default} expansion."""
+
+    def __init__(self, args: Optional[List[str]], command: Optional[str], env: Optional[Dict[str, str]], type: Optional[FluffyType], headers: Optional[Dict[str, str]], url: Optional[str]) -> None:
+        self.args = args
+        self.command = command
+        self.env = env
+        self.type = type
+        self.headers = headers
+        self.url = url
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'MCPConfi':
+        assert isinstance(obj, dict)
+        args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
+        command = from_union([from_str, from_none], obj.get("command"))
+        env = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("env"))
+        type = from_union([FluffyType, from_none], obj.get("type"))
+        headers = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("headers"))
+        url = from_union([from_str, from_none], obj.get("url"))
+        return MCPConfi(args, command, env, type, headers, url)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.args is not None:
+            result["args"] = from_union([lambda x: from_list(from_str, x), from_none], self.args)
+        if self.command is not None:
+            result["command"] = from_union([from_str, from_none], self.command)
+        if self.env is not None:
+            result["env"] = from_union([lambda x: from_dict(from_str, x), from_none], self.env)
+        if self.type is not None:
+            result["type"] = from_union([lambda x: to_enum(FluffyType, x), from_none], self.type)
+        if self.headers is not None:
+            result["headers"] = from_union([lambda x: from_dict(from_str, x), from_none], self.headers)
+        if self.url is not None:
+            result["url"] = from_union([from_str, from_none], self.url)
+        return result
+
+
+class ClaudeCodeMCPJSON:
+    """Project-scoped MCP server configuration (.mcp.json). Source:
+    https://code.claude.com/docs/en/mcp#project-scope
+    """
+    mcp_servers: Dict[str, MCPConfi]
+    """Map of MCP server names to their configurations."""
+
+    def __init__(self, mcp_servers: Dict[str, MCPConfi]) -> None:
+        self.mcp_servers = mcp_servers
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'ClaudeCodeMCPJSON':
+        assert isinstance(obj, dict)
+        mcp_servers = from_dict(MCPConfi.from_dict, obj.get("mcpServers"))
+        return ClaudeCodeMCPJSON(mcp_servers)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["mcpServers"] = from_dict(lambda x: to_class(MCPConfi, x), self.mcp_servers)
+        return result
+
+
+class Context(Enum):
+    """Set to 'fork' to run in a forked subagent context."""
+
+    FORK = "fork"
+
+
+class ClaudeCodeSkillFrontmatter:
+    """YAML frontmatter for SKILL.md files. Source:
+    https://code.claude.com/docs/en/skills#frontmatter-reference
+    """
+    agent: Optional[str]
+    """Which subagent type to use when context: fork is set. Options include built-in agents
+    (Explore, Plan, general-purpose) or any custom subagent.
+    """
+    allowed_tools: Optional[Union[str, List[str]]]
+    """Tools Claude can use without asking permission when this skill is active."""
+
+    argument_hint: Optional[str]
+    """Hint shown during autocomplete to indicate expected arguments. Example: '[issue-number]'
+    or '[filename] [format]'.
+    """
+    arguments: Optional[Union[str, List[str]]]
+    """Named positional arguments for $name substitution in the skill content."""
+
+    context: Optional[Context]
+    """Set to 'fork' to run in a forked subagent context."""
+
+    description: Optional[str]
+    """What the skill does and when to use it. Claude uses this to decide when to apply the
+    skill. Combined with when_to_use, truncated at 1,536 characters in the skill listing.
+    """
+    disable_model_invocation: Optional[bool]
+    """Set to true to prevent Claude from automatically loading this skill. Use for workflows
+    you want to trigger manually with /name.
+    """
+    effort: Optional[Effort]
+    """Effort level when this skill is active. Overrides the session effort level."""
+
+    hooks: Optional[Dict[str, Any]]
+    """Hooks scoped to this skill's lifecycle. See
+    https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents
+    """
+    model: Optional[str]
+    """Model to use when this skill is active. Accepts the same values as /model, or 'inherit'
+    to keep the active model.
+    """
+    name: Optional[str]
+    """Display name for the skill. If omitted, uses the directory name. Lowercase letters,
+    numbers, and hyphens only (max 64 characters).
+    """
+    paths: Optional[Union[str, List[str]]]
+    """Glob patterns that limit when this skill is activated. When set, Claude loads the skill
+    automatically only when working with files matching the patterns.
+    """
+    shell: Optional[Shell]
+    """Shell to use for !`command` and ```! blocks in this skill."""
+
+    user_invocable: Optional[bool]
+    """Set to false to hide from the / menu. Use for background knowledge users shouldn't invoke
+    directly.
+    """
+    when_to_use: Optional[str]
+    """Additional context for when Claude should invoke the skill, such as trigger phrases or
+    example requests. Appended to description in the skill listing.
+    """
+
+    def __init__(self, agent: Optional[str], allowed_tools: Optional[Union[str, List[str]]], argument_hint: Optional[str], arguments: Optional[Union[str, List[str]]], context: Optional[Context], description: Optional[str], disable_model_invocation: Optional[bool], effort: Optional[Effort], hooks: Optional[Dict[str, Any]], model: Optional[str], name: Optional[str], paths: Optional[Union[str, List[str]]], shell: Optional[Shell], user_invocable: Optional[bool], when_to_use: Optional[str]) -> None:
+        self.agent = agent
+        self.allowed_tools = allowed_tools
+        self.argument_hint = argument_hint
+        self.arguments = arguments
+        self.context = context
+        self.description = description
+        self.disable_model_invocation = disable_model_invocation
+        self.effort = effort
+        self.hooks = hooks
+        self.model = model
+        self.name = name
+        self.paths = paths
+        self.shell = shell
+        self.user_invocable = user_invocable
+        self.when_to_use = when_to_use
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'ClaudeCodeSkillFrontmatter':
+        assert isinstance(obj, dict)
+        agent = from_union([from_str, from_none], obj.get("agent"))
+        allowed_tools = from_union([from_str, lambda x: from_list(from_str, x), from_none], obj.get("allowed-tools"))
+        argument_hint = from_union([from_str, from_none], obj.get("argument-hint"))
+        arguments = from_union([from_str, lambda x: from_list(from_str, x), from_none], obj.get("arguments"))
+        context = from_union([Context, from_none], obj.get("context"))
+        description = from_union([from_str, from_none], obj.get("description"))
+        disable_model_invocation = from_union([from_bool, from_none], obj.get("disable-model-invocation"))
+        effort = from_union([Effort, from_none], obj.get("effort"))
+        hooks = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("hooks"))
+        model = from_union([from_str, from_none], obj.get("model"))
+        name = from_union([from_str, from_none], obj.get("name"))
+        paths = from_union([from_str, lambda x: from_list(from_str, x), from_none], obj.get("paths"))
+        shell = from_union([Shell, from_none], obj.get("shell"))
+        user_invocable = from_union([from_bool, from_none], obj.get("user-invocable"))
+        when_to_use = from_union([from_str, from_none], obj.get("when_to_use"))
+        return ClaudeCodeSkillFrontmatter(agent, allowed_tools, argument_hint, arguments, context, description, disable_model_invocation, effort, hooks, model, name, paths, shell, user_invocable, when_to_use)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.agent is not None:
+            result["agent"] = from_union([from_str, from_none], self.agent)
+        if self.allowed_tools is not None:
+            result["allowed-tools"] = from_union([from_str, lambda x: from_list(from_str, x), from_none], self.allowed_tools)
+        if self.argument_hint is not None:
+            result["argument-hint"] = from_union([from_str, from_none], self.argument_hint)
+        if self.arguments is not None:
+            result["arguments"] = from_union([from_str, lambda x: from_list(from_str, x), from_none], self.arguments)
+        if self.context is not None:
+            result["context"] = from_union([lambda x: to_enum(Context, x), from_none], self.context)
+        if self.description is not None:
+            result["description"] = from_union([from_str, from_none], self.description)
+        if self.disable_model_invocation is not None:
+            result["disable-model-invocation"] = from_union([from_bool, from_none], self.disable_model_invocation)
+        if self.effort is not None:
+            result["effort"] = from_union([lambda x: to_enum(Effort, x), from_none], self.effort)
+        if self.hooks is not None:
+            result["hooks"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.hooks)
+        if self.model is not None:
+            result["model"] = from_union([from_str, from_none], self.model)
+        if self.name is not None:
+            result["name"] = from_union([from_str, from_none], self.name)
+        if self.paths is not None:
+            result["paths"] = from_union([from_str, lambda x: from_list(from_str, x), from_none], self.paths)
+        if self.shell is not None:
+            result["shell"] = from_union([lambda x: to_enum(Shell, x), from_none], self.shell)
+        if self.user_invocable is not None:
+            result["user-invocable"] = from_union([from_bool, from_none], self.user_invocable)
+        if self.when_to_use is not None:
+            result["when_to_use"] = from_union([from_str, from_none], self.when_to_use)
+        return result
+
+
 def claude_code_plugin_manifest_from_dict(s: Any) -> ClaudeCodePluginManifest:
     return ClaudeCodePluginManifest.from_dict(s)
 
@@ -3696,4 +4184,28 @@ def claude_code_settings_from_dict(s: Any) -> ClaudeCodeSettings:
 
 def claude_code_settings_to_dict(x: ClaudeCodeSettings) -> Any:
     return to_class(ClaudeCodeSettings, x)
+
+
+def claude_code_agent_frontmatter_from_dict(s: Any) -> ClaudeCodeAgentFrontmatter:
+    return ClaudeCodeAgentFrontmatter.from_dict(s)
+
+
+def claude_code_agent_frontmatter_to_dict(x: ClaudeCodeAgentFrontmatter) -> Any:
+    return to_class(ClaudeCodeAgentFrontmatter, x)
+
+
+def claude_code_mcpjson_from_dict(s: Any) -> ClaudeCodeMCPJSON:
+    return ClaudeCodeMCPJSON.from_dict(s)
+
+
+def claude_code_mcpjson_to_dict(x: ClaudeCodeMCPJSON) -> Any:
+    return to_class(ClaudeCodeMCPJSON, x)
+
+
+def claude_code_skill_frontmatter_from_dict(s: Any) -> ClaudeCodeSkillFrontmatter:
+    return ClaudeCodeSkillFrontmatter.from_dict(s)
+
+
+def claude_code_skill_frontmatter_to_dict(x: ClaudeCodeSkillFrontmatter) -> Any:
+    return to_class(ClaudeCodeSkillFrontmatter, x)
 

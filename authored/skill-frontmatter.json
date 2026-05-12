@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/phatblat/claude-config-schema/authored/skill-frontmatter.json",
+  "title": "Claude Code Skill Frontmatter",
+  "description": "YAML frontmatter for SKILL.md files. Source: https://code.claude.com/docs/en/skills#frontmatter-reference",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name for the skill. If omitted, uses the directory name. Lowercase letters, numbers, and hyphens only (max 64 characters).",
+      "pattern": "^[a-z0-9-]{1,64}$"
+    },
+    "description": {
+      "type": "string",
+      "description": "What the skill does and when to use it. Claude uses this to decide when to apply the skill. Combined with when_to_use, truncated at 1,536 characters in the skill listing."
+    },
+    "when_to_use": {
+      "type": "string",
+      "description": "Additional context for when Claude should invoke the skill, such as trigger phrases or example requests. Appended to description in the skill listing."
+    },
+    "argument-hint": {
+      "type": "string",
+      "description": "Hint shown during autocomplete to indicate expected arguments. Example: '[issue-number]' or '[filename] [format]'."
+    },
+    "arguments": {
+      "description": "Named positional arguments for $name substitution in the skill content.",
+      "anyOf": [
+        {
+          "type": "string",
+          "description": "Space-separated argument names."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of argument names."
+        }
+      ]
+    },
+    "disable-model-invocation": {
+      "type": "boolean",
+      "description": "Set to true to prevent Claude from automatically loading this skill. Use for workflows you want to trigger manually with /name.",
+      "default": false
+    },
+    "user-invocable": {
+      "type": "boolean",
+      "description": "Set to false to hide from the / menu. Use for background knowledge users shouldn't invoke directly.",
+      "default": true
+    },
+    "allowed-tools": {
+      "description": "Tools Claude can use without asking permission when this skill is active.",
+      "anyOf": [
+        {
+          "type": "string",
+          "description": "Space-separated tool names."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of tool names."
+        }
+      ]
+    },
+    "model": {
+      "type": "string",
+      "description": "Model to use when this skill is active. Accepts the same values as /model, or 'inherit' to keep the active model."
+    },
+    "effort": {
+      "type": "string",
+      "description": "Effort level when this skill is active. Overrides the session effort level.",
+      "enum": ["low", "medium", "high", "xhigh", "max"]
+    },
+    "context": {
+      "type": "string",
+      "description": "Set to 'fork' to run in a forked subagent context.",
+      "enum": ["fork"]
+    },
+    "agent": {
+      "type": "string",
+      "description": "Which subagent type to use when context: fork is set. Options include built-in agents (Explore, Plan, general-purpose) or any custom subagent."
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Hooks scoped to this skill's lifecycle. See https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents"
+    },
+    "paths": {
+      "description": "Glob patterns that limit when this skill is activated. When set, Claude loads the skill automatically only when working with files matching the patterns.",
+      "anyOf": [
+        {
+          "type": "string",
+          "description": "Comma-separated glob patterns."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of glob patterns."
+        }
+      ]
+    },
+    "shell": {
+      "type": "string",
+      "description": "Shell to use for !`command` and ```! blocks in this skill.",
+      "enum": ["bash", "powershell"],
+      "default": "bash"
+    }
+  },
+  "additionalProperties": false
+}
