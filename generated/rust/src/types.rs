@@ -966,9 +966,10 @@ pub struct ClaudeCodeSettings {
     /// https://code.claude.com/docs/en/plugin-marketplaces
     extra_known_marketplaces: Option<HashMap<String, ExtraKnownMarketplace>>,
 
-    /// Enable fast mode for Opus 4.6 (research preview). Fast mode uses the same model with 2.5x
-    /// faster output at higher per-token cost. Requires extra usage enabled. Alternatively,
-    /// toggle with /fast command. See https://code.claude.com/docs/en/fast-mode
+    /// Enable fast mode, which uses Claude Opus 4.7 by default for 2.5x faster output at higher
+    /// per-token cost. Requires extra usage enabled. Toggle with /fast command. Set
+    /// CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1 to pin fast mode to Opus 4.6. See
+    /// https://code.claude.com/docs/en/fast-mode
     fast_mode: Option<bool>,
 
     /// Require per-session opt-in for fast mode. When true, fast mode does not persist across
@@ -1049,6 +1050,11 @@ pub struct ClaudeCodeSettings {
     /// .claude/output-styles/. See https://code.claude.com/docs/en/output-styles
     output_style: Option<String>,
 
+    /// (Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+    /// inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+    /// arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+    parent_settings_behavior: Option<ParentSettingsBehavior>,
+
     /// Tool usage permissions configuration.
     /// See https://code.claude.com/docs/en/permissions and
     /// https://code.claude.com/docs/en/settings#permission-settings
@@ -1098,6 +1104,13 @@ pub struct ClaudeCodeSettings {
     /// hide these messages (default: true)
     show_turn_duration: Option<bool>,
 
+    /// Per-skill visibility overrides. Controls whether skills appear to Claude and in the /
+    /// picker. Values: 'on' (name and description shown, default), 'name-only' (name only),
+    /// 'user-invocable-only' (hidden from Claude, visible in /), 'off' (hidden everywhere).
+    /// Plugin skills are not affected by this setting. See
+    /// https://code.claude.com/docs/en/skills#override-skill-visibility-from-settings
+    skill_overrides: Option<HashMap<String, SkillOverride>>,
+
     /// Whether the user has accepted the bypass permissions mode dialog. Typically managed by
     /// the CLI rather than set by hand.
     skip_dangerous_mode_permission_prompt: Option<bool>,
@@ -1136,6 +1149,10 @@ pub struct ClaudeCodeSettings {
     /// form locks specific surfaces (e.g., ["skills", "hooks"]); true locks all four; false is
     /// an explicit no-op. See https://code.claude.com/docs/en/plugins-reference
     strict_plugin_only_customization: Option<StrictPluginOnlyCustomizationUnion>,
+
+    /// Status line configuration for subagent sessions. See
+    /// https://code.claude.com/docs/en/statusline#subagent-status-lines
+    subagent_status_line: Option<SubagentStatusLine>,
 
     /// How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process
     /// otherwise. Agent teams are experimental and disabled by default. Enable them by adding
@@ -1222,6 +1239,12 @@ pub struct AutoMode {
     /// environment context entirely unless the literal string "$defaults" is included as an
     /// entry, which splices the built-in defaults in at that position.
     environment: Option<Vec<String>>,
+
+    /// Rules for the auto mode classifier hard-deny section. Hard-deny rules block
+    /// unconditionally regardless of user intent. Replaces the built-in hard-deny rules entirely
+    /// unless the literal string "$defaults" is included as an entry, which splices the built-in
+    /// defaults in at that position. See https://code.claude.com/docs/en/permissions
+    hard_deny: Option<Vec<String>>,
 
     /// Rules for the auto mode classifier soft-deny section. Replaces the built-in soft-deny
     /// rules entirely unless the literal string "$defaults" is included as an entry, which
@@ -1619,6 +1642,11 @@ pub struct ConfigChangeElement {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HookElement {
+    /// Argument list for exec form. When present, spawns the command directly without shell
+    /// interpretation — each element is passed as-is, so path placeholders never need quoting.
+    /// See https://code.claude.com/docs/en/hooks#command-hook-fields
+    args: Option<Vec<String>>,
+
     /// Run this hook asynchronously without blocking Claude Code
     #[serde(rename = "async")]
     setting_async: Option<bool>,
@@ -1660,6 +1688,11 @@ pub struct HookElement {
     #[serde(rename = "type")]
     setting_type: HookType,
 
+    /// When the prompt returns ok: false, feed the reason back to Claude and continue the turn
+    /// instead of stopping. Implemented as continue: true on the resulting decision: "block".
+    /// See https://code.claude.com/docs/en/hooks#prompt-hook-configuration
+    continue_on_block: Option<bool>,
+
     /// Model to use for evaluation. Defaults to a fast model
     model: Option<String>,
 
@@ -1688,6 +1721,18 @@ pub struct HookElement {
 
     /// Name of the tool to call on that server
     tool: Option<String>,
+}
+
+/// (Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+/// inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+/// arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ParentSettingsBehavior {
+    #[serde(rename = "first-wins")]
+    FirstWins,
+
+    Merge,
 }
 
 /// Tool usage permissions configuration.
@@ -1804,8 +1849,18 @@ pub struct Sandbox {
     /// https://code.claude.com/docs/en/sandboxing#sandbox-modes
     auto_allow_bash_if_sandboxed: Option<bool>,
 
+    /// (Managed setting only) Path to custom bubblewrap (bwrap) binary for Linux/WSL sandbox.
+    /// Overrides default. See https://code.claude.com/docs/en/server-managed-settings
+    bwrap_path: Option<String>,
+
     /// Enable sandboxed bash. See https://code.claude.com/docs/en/sandboxing#enable-sandboxing
     enabled: Option<bool>,
+
+    /// Limit the entire sandbox configuration to the listed platforms. On platforms not in the
+    /// list the sandbox config is inert: no sandbox, no auto-allow, no startup warning, and no
+    /// failIfUnavailable exit. When omitted, all supported platforms are included. Only honored
+    /// from managed (policy) settings.
+    enabled_platforms: Option<Vec<EnabledPlatform>>,
 
     /// Enable weaker sandbox mode for unprivileged docker environments where --proc mounting
     /// fails. This significantly reduces the strength of the sandbox and should only be used
@@ -1824,6 +1879,11 @@ pub struct Sandbox {
     /// https://code.claude.com/docs/en/sandboxing#configure-sandboxing
     excluded_commands: Option<Vec<String>>,
 
+    /// When true, make sandbox startup a hard failure if required sandbox dependencies are
+    /// missing. Default: false (sandbox is skipped with a warning). See
+    /// https://code.claude.com/docs/en/sandboxing#enable-sandboxing
+    fail_if_unavailable: Option<bool>,
+
     /// Filesystem access control for sandboxed commands. See
     /// https://code.claude.com/docs/en/sandboxing#filesystem-isolation
     filesystem: Option<Filesystem>,
@@ -1839,6 +1899,22 @@ pub struct Sandbox {
     /// Custom ripgrep configuration for Claude Code's bundled ripgrep support. Overrides the
     /// bundled binary and arguments.
     ripgrep: Option<Ripgrep>,
+
+    /// (Managed setting only) Path to custom socat binary for Linux/WSL network proxying.
+    /// Overrides default. See https://code.claude.com/docs/en/server-managed-settings
+    socat_path: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EnabledPlatform {
+    Linux,
+
+    Macos,
+
+    Windows,
+
+    Wsl,
 }
 
 /// Filesystem access control for sandboxed commands. See
@@ -1931,6 +2007,20 @@ pub struct Ripgrep {
     command: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SkillOverride {
+    #[serde(rename = "name-only")]
+    NameOnly,
+
+    Off,
+
+    On,
+
+    #[serde(rename = "user-invocable-only")]
+    UserInvocableOnly,
+}
+
 /// Customize the tips displayed in the spinner while Claude is working. See
 /// https://code.claude.com/docs/en/settings#available-settings
 #[derive(Serialize, Deserialize)]
@@ -1972,6 +2062,11 @@ pub struct StatusLine {
     /// costs, git status, etc.) by reading JSON data from stdin and writing output to stdout.
     /// See https://code.claude.com/docs/en/statusline
     command: String,
+
+    /// Set to true when your status line script renders the vim mode indicator itself, to
+    /// suppress the built-in vim mode display. See
+    /// https://code.claude.com/docs/en/statusline#manually-configure-a-status-line
+    hide_vim_mode_indicator: Option<bool>,
 
     /// Optional number of extra horizontal spacing characters added to the status line content;
     /// defaults to 0.
@@ -2050,6 +2145,18 @@ pub enum StrictPluginOnlyCustomizationElement {
     Skills,
 }
 
+/// Status line configuration for subagent sessions. See
+/// https://code.claude.com/docs/en/statusline#subagent-status-lines
+#[derive(Serialize, Deserialize)]
+pub struct SubagentStatusLine {
+    /// Shell command to run for the subagent status line
+    command: String,
+
+    /// Must be "command"
+    #[serde(rename = "type")]
+    subagent_status_line_type: FileSuggestionType,
+}
+
 /// How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process
 /// otherwise. Agent teams are experimental and disabled by default. Enable them by adding
 /// CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS to your settings.json or environment. See
@@ -2094,10 +2201,44 @@ pub enum ViewMode {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Worktree {
+    /// Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+    /// fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+    /// https://code.claude.com/docs/en/settings#worktree-settings
+    base_ref: Option<BaseRef>,
+
+    /// Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+    /// until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+    /// without EnterWorktree, for repos where worktrees are impractical. See
+    /// https://code.claude.com/docs/en/settings#worktree-settings
+    bg_isolation: Option<BgIsolation>,
+
     /// Directories to check out in each worktree via git sparse-checkout (cone mode). Only the
     /// listed paths are written to disk, which is faster in large monorepos. See
     /// https://code.claude.com/docs/en/settings#worktree-settings
     sparse_paths: Option<Vec<String>>,
+}
+
+/// Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+/// fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+/// https://code.claude.com/docs/en/settings#worktree-settings
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BaseRef {
+    Fresh,
+
+    Head,
+}
+
+/// Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+/// until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+/// without EnterWorktree, for repos where worktrees are impractical. See
+/// https://code.claude.com/docs/en/settings#worktree-settings
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BgIsolation {
+    None,
+
+    Worktree,
 }
 
 /// YAML frontmatter for subagent .md files. Source:

@@ -920,9 +920,10 @@ export interface ClaudeCodeSettings {
      */
     extraKnownMarketplaces?: { [key: string]: ExtraKnownMarketplace };
     /**
-     * Enable fast mode for Opus 4.6 (research preview). Fast mode uses the same model with 2.5x
-     * faster output at higher per-token cost. Requires extra usage enabled. Alternatively,
-     * toggle with /fast command. See https://code.claude.com/docs/en/fast-mode
+     * Enable fast mode, which uses Claude Opus 4.7 by default for 2.5x faster output at higher
+     * per-token cost. Requires extra usage enabled. Toggle with /fast command. Set
+     * CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1 to pin fast mode to Opus 4.6. See
+     * https://code.claude.com/docs/en/fast-mode
      */
     fastMode?: boolean;
     /**
@@ -1019,6 +1020,12 @@ export interface ClaudeCodeSettings {
      */
     outputStyle?: string;
     /**
+     * (Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+     * inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+     * arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+     */
+    parentSettingsBehavior?: ParentSettingsBehavior;
+    /**
      * Tool usage permissions configuration.
      * See https://code.claude.com/docs/en/permissions and
      * https://code.claude.com/docs/en/settings#permission-settings
@@ -1079,6 +1086,14 @@ export interface ClaudeCodeSettings {
      */
     showTurnDuration?: boolean;
     /**
+     * Per-skill visibility overrides. Controls whether skills appear to Claude and in the /
+     * picker. Values: 'on' (name and description shown, default), 'name-only' (name only),
+     * 'user-invocable-only' (hidden from Claude, visible in /), 'off' (hidden everywhere).
+     * Plugin skills are not affected by this setting. See
+     * https://code.claude.com/docs/en/skills#override-skill-visibility-from-settings
+     */
+    skillOverrides?: { [key: string]: SkillOverride };
+    /**
      * Whether the user has accepted the bypass permissions mode dialog. Typically managed by
      * the CLI rather than set by hand.
      */
@@ -1127,6 +1142,11 @@ export interface ClaudeCodeSettings {
      * an explicit no-op. See https://code.claude.com/docs/en/plugins-reference
      */
     strictPluginOnlyCustomization?: StrictPluginOnlyCustomizationElement[] | boolean;
+    /**
+     * Status line configuration for subagent sessions. See
+     * https://code.claude.com/docs/en/statusline#subagent-status-lines
+     */
+    subagentStatusLine?: SubagentStatusLine;
     /**
      * How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process
      * otherwise. Agent teams are experimental and disabled by default. Enable them by adding
@@ -1232,6 +1252,13 @@ export interface AutoMode {
      * entry, which splices the built-in defaults in at that position.
      */
     environment?: string[];
+    /**
+     * Rules for the auto mode classifier hard-deny section. Hard-deny rules block
+     * unconditionally regardless of user intent. Replaces the built-in hard-deny rules entirely
+     * unless the literal string "$defaults" is included as an entry, which splices the built-in
+     * defaults in at that position. See https://code.claude.com/docs/en/permissions
+     */
+    hard_deny?: string[];
     /**
      * Rules for the auto mode classifier soft-deny section. Replaces the built-in soft-deny
      * rules entirely unless the literal string "$defaults" is included as an entry, which
@@ -1472,6 +1499,12 @@ export interface Env {
      */
     ANTHROPIC_VERTEX_PROJECT_ID?: string;
     /**
+     * Workspace ID for workload identity federation. Scopes the minted token to a specific
+     * workspace when the federation rule covers more than one. See
+     * https://code.claude.com/docs/en/env-vars
+     */
+    ANTHROPIC_WORKSPACE_ID?: string;
+    /**
      * API request timeout in milliseconds (default: 600000)
      */
     API_TIMEOUT_MS?: string;
@@ -1572,6 +1605,11 @@ export interface Env {
      */
     CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING?: CcrForceBundle;
     /**
+     * Disable alternate screen buffer rendering. When set to 1, keeps conversation in native
+     * scrollback instead of fullscreen renderer
+     */
+    CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN?: CcrForceBundle;
+    /**
      * Disable attachment processing
      */
     CLAUDE_CODE_DISABLE_ATTACHMENTS?: CcrForceBundle;
@@ -1661,9 +1699,18 @@ export interface Env {
      */
     CLAUDE_CODE_ENABLE_BACKGROUND_PLUGIN_REFRESH?: CcrForceBundle;
     /**
+     * Enable feedback survey collection via OpenTelemetry for enterprises
+     */
+    CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL?: CcrForceBundle;
+    /**
      * Force fine-grained tool output streaming
      */
     CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING?: CcrForceBundle;
+    /**
+     * Enable model discovery from LLM gateway /v1/models endpoint when ANTHROPIC_BASE_URL
+     * points at an Anthropic-compatible gateway
+     */
+    CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY?: CcrForceBundle;
     /**
      * Enable prompt suggestions
      */
@@ -1692,6 +1739,11 @@ export interface Env {
      * Token limit for file read operations
      */
     CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS?: string;
+    /**
+     * Force synchronous output flushing. When set to 1, forces synchronized output on terminals
+     * that auto-detection misses (e.g., Emacs eat)
+     */
+    CLAUDE_CODE_FORCE_SYNC_OUTPUT?: CcrForceBundle;
     /**
      * Fork subagent processes in non-interactive sessions. See
      * https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#21120
@@ -1771,6 +1823,12 @@ export interface Env {
      */
     CLAUDE_CODE_OAUTH_TOKEN?: string;
     /**
+     * Set to 1 to pin fast mode to Claude Opus 4.6 instead of the default Opus 4.7. With this
+     * set, /fast runs on Opus 4.6. Without it, /fast runs on Opus 4.7. See
+     * https://code.claude.com/docs/en/fast-mode and https://code.claude.com/docs/en/env-vars
+     */
+    CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE?: CcrForceBundle;
+    /**
      * OpenTelemetry span flush timeout in milliseconds (default: 5000)
      */
     CLAUDE_CODE_OTEL_FLUSH_TIMEOUT_MS?: string;
@@ -1782,6 +1840,11 @@ export interface Env {
      * OpenTelemetry shutdown timeout in milliseconds (default: 2000)
      */
     CLAUDE_CODE_OTEL_SHUTDOWN_TIMEOUT_MS?: string;
+    /**
+     * Enable automatic package manager updates. When set, Claude Code runs the upgrade command
+     * in background on Homebrew/WinGet and prompts to restart
+     */
+    CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE?: CcrForceBundle;
     /**
      * Enable Perforce write protection mode
      */
@@ -1800,9 +1863,22 @@ export interface Env {
      */
     CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE?: CcrForceBundle;
     /**
+     * Set to 1 to clone GitHub owner/repo plugin sources over HTTPS instead of SSH. Useful in
+     * CI runners, containers, or environments without a configured SSH key for github.com. See
+     * https://code.claude.com/docs/en/env-vars
+     */
+    CLAUDE_CODE_PLUGIN_PREFER_HTTPS?: CcrForceBundle;
+    /**
      * Path(s) to pre-populated plugin directories
      */
     CLAUDE_CODE_PLUGIN_SEED_DIR?: string;
+    /**
+     * Set to 1 to stop Claude Code from passing -ExecutionPolicy Bypass when spawning
+     * PowerShell for tool calls, hooks, and status line commands. By default Claude Code
+     * bypasses execution policy so .ps1 scripts work on default-Restricted Windows installs.
+     * See https://code.claude.com/docs/en/env-vars
+     */
+    CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY?: CcrForceBundle;
     /**
      * Indicate that the host application manages provider routing
      */
@@ -1872,6 +1948,12 @@ export interface Env {
      * Skip Google authentication for Vertex AI
      */
     CLAUDE_CODE_SKIP_VERTEX_AUTH?: CcrForceBundle;
+    /**
+     * Override the default maximum consecutive Stop hook blocks (default: 8) before the turn
+     * ends with a warning. Raise this when a stop hook legitimately needs more than 8
+     * iterations to converge. See https://code.claude.com/docs/en/hooks-guide
+     */
+    CLAUDE_CODE_STOP_HOOK_BLOCK_CAP?: string;
     /**
      * Override model used by subagents
      */
@@ -2003,6 +2085,9 @@ export enum AnthropicBedrockServiceTier {
  *
  * Disable adaptive reasoning
  *
+ * Disable alternate screen buffer rendering. When set to 1, keeps conversation in native
+ * scrollback instead of fullscreen renderer
+ *
  * Disable attachment processing
  *
  * Disable automatic memory feature
@@ -2046,13 +2131,21 @@ export enum AnthropicBedrockServiceTier {
  *
  * Refresh plugins at turn boundaries
  *
+ * Enable feedback survey collection via OpenTelemetry for enterprises
+ *
  * Force fine-grained tool output streaming
+ *
+ * Enable model discovery from LLM gateway /v1/models endpoint when ANTHROPIC_BASE_URL
+ * points at an Anthropic-compatible gateway
  *
  * Enable task tracking in non-interactive mode
  *
  * Enable OpenTelemetry collection
  *
  * Enable experimental agent teams feature
+ *
+ * Force synchronous output flushing. When set to 1, forces synchronized output on terminals
+ * that auto-detection misses (e.g., Emacs eat)
  *
  * Fork subagent processes in non-interactive sessions. See
  * https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#21120
@@ -2070,9 +2163,25 @@ export enum AnthropicBedrockServiceTier {
  *
  * Enable fullscreen rendering mode to reduce flicker
  *
+ * Set to 1 to pin fast mode to Claude Opus 4.6 instead of the default Opus 4.7. With this
+ * set, /fast runs on Opus 4.6. Without it, /fast runs on Opus 4.7. See
+ * https://code.claude.com/docs/en/fast-mode and https://code.claude.com/docs/en/env-vars
+ *
+ * Enable automatic package manager updates. When set, Claude Code runs the upgrade command
+ * in background on Homebrew/WinGet and prompts to restart
+ *
  * Enable Perforce write protection mode
  *
  * Keep plugin cache on update failure
+ *
+ * Set to 1 to clone GitHub owner/repo plugin sources over HTTPS instead of SSH. Useful in
+ * CI runners, containers, or environments without a configured SSH key for github.com. See
+ * https://code.claude.com/docs/en/env-vars
+ *
+ * Set to 1 to stop Claude Code from passing -ExecutionPolicy Bypass when spawning
+ * PowerShell for tool calls, hooks, and status line commands. By default Claude Code
+ * bypasses execution policy so .ps1 scripts work on default-Restricted Windows installs.
+ * See https://code.claude.com/docs/en/env-vars
  *
  * Indicate that the host application manages provider routing
  *
@@ -2449,6 +2558,12 @@ export interface ConfigChangeElement {
  */
 export interface HookElement {
     /**
+     * Argument list for exec form. When present, spawns the command directly without shell
+     * interpretation — each element is passed as-is, so path placeholders never need quoting.
+     * See https://code.claude.com/docs/en/hooks#command-hook-fields
+     */
+    args?: string[];
+    /**
      * Run this hook asynchronously without blocking Claude Code
      */
     async?: boolean;
@@ -2495,6 +2610,12 @@ export interface HookElement {
      */
     type: HookType;
     /**
+     * When the prompt returns ok: false, feed the reason back to Claude and continue the turn
+     * instead of stopping. Implemented as continue: true on the resulting decision: "block".
+     * See https://code.claude.com/docs/en/hooks#prompt-hook-configuration
+     */
+    continueOnBlock?: boolean;
+    /**
      * Model to use for evaluation. Defaults to a fast model
      */
     model?: string;
@@ -2531,6 +2652,16 @@ export interface HookElement {
      * Name of the tool to call on that server
      */
     tool?: string;
+}
+
+/**
+ * (Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+ * inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+ * arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+ */
+export enum ParentSettingsBehavior {
+    FirstWINS = "first-wins",
+    Merge = "merge",
 }
 
 /**
@@ -2637,9 +2768,21 @@ export interface Sandbox {
      */
     autoAllowBashIfSandboxed?: boolean;
     /**
+     * (Managed setting only) Path to custom bubblewrap (bwrap) binary for Linux/WSL sandbox.
+     * Overrides default. See https://code.claude.com/docs/en/server-managed-settings
+     */
+    bwrapPath?: string;
+    /**
      * Enable sandboxed bash. See https://code.claude.com/docs/en/sandboxing#enable-sandboxing
      */
     enabled?: boolean;
+    /**
+     * Limit the entire sandbox configuration to the listed platforms. On platforms not in the
+     * list the sandbox config is inert: no sandbox, no auto-allow, no startup warning, and no
+     * failIfUnavailable exit. When omitted, all supported platforms are included. Only honored
+     * from managed (policy) settings.
+     */
+    enabledPlatforms?: EnabledPlatform[];
     /**
      * Enable weaker sandbox mode for unprivileged docker environments where --proc mounting
      * fails. This significantly reduces the strength of the sandbox and should only be used
@@ -2661,6 +2804,12 @@ export interface Sandbox {
      */
     excludedCommands?: string[];
     /**
+     * When true, make sandbox startup a hard failure if required sandbox dependencies are
+     * missing. Default: false (sandbox is skipped with a warning). See
+     * https://code.claude.com/docs/en/sandboxing#enable-sandboxing
+     */
+    failIfUnavailable?: boolean;
+    /**
      * Filesystem access control for sandboxed commands. See
      * https://code.claude.com/docs/en/sandboxing#filesystem-isolation
      */
@@ -2680,6 +2829,18 @@ export interface Sandbox {
      * bundled binary and arguments.
      */
     ripgrep?: Ripgrep;
+    /**
+     * (Managed setting only) Path to custom socat binary for Linux/WSL network proxying.
+     * Overrides default. See https://code.claude.com/docs/en/server-managed-settings
+     */
+    socatPath?: string;
+}
+
+export enum EnabledPlatform {
+    Linux = "linux",
+    Macos = "macos",
+    Windows = "windows",
+    Wsl = "wsl",
 }
 
 /**
@@ -2792,6 +2953,13 @@ export interface Ripgrep {
     command: string;
 }
 
+export enum SkillOverride {
+    NameOnly = "name-only",
+    Off = "off",
+    On = "on",
+    UserInvocableOnly = "user-invocable-only",
+}
+
 /**
  * Customize the tips displayed in the spinner while Claude is working. See
  * https://code.claude.com/docs/en/settings#available-settings
@@ -2841,6 +3009,12 @@ export interface StatusLine {
      * See https://code.claude.com/docs/en/statusline
      */
     command: string;
+    /**
+     * Set to true when your status line script renders the vim mode indicator itself, to
+     * suppress the built-in vim mode display. See
+     * https://code.claude.com/docs/en/statusline#manually-configure-a-status-line
+     */
+    hideVimModeIndicator?: boolean;
     /**
      * Optional number of extra horizontal spacing characters added to the status line content;
      * defaults to 0.
@@ -2913,6 +3087,21 @@ export enum StrictPluginOnlyCustomizationElement {
 }
 
 /**
+ * Status line configuration for subagent sessions. See
+ * https://code.claude.com/docs/en/statusline#subagent-status-lines
+ */
+export interface SubagentStatusLine {
+    /**
+     * Shell command to run for the subagent status line
+     */
+    command: string;
+    /**
+     * Must be "command"
+     */
+    type: FileSuggestionType;
+}
+
+/**
  * How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process
  * otherwise. Agent teams are experimental and disabled by default. Enable them by adding
  * CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS to your settings.json or environment. See
@@ -2951,11 +3140,45 @@ export enum ViewMode {
  */
 export interface Worktree {
     /**
+     * Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+     * fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+     * https://code.claude.com/docs/en/settings#worktree-settings
+     */
+    baseRef?: BaseRef;
+    /**
+     * Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+     * until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+     * without EnterWorktree, for repos where worktrees are impractical. See
+     * https://code.claude.com/docs/en/settings#worktree-settings
+     */
+    bgIsolation?: BgIsolation;
+    /**
      * Directories to check out in each worktree via git sparse-checkout (cone mode). Only the
      * listed paths are written to disk, which is faster in large monorepos. See
      * https://code.claude.com/docs/en/settings#worktree-settings
      */
     sparsePaths?: string[];
+}
+
+/**
+ * Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+ * fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+ * https://code.claude.com/docs/en/settings#worktree-settings
+ */
+export enum BaseRef {
+    Fresh = "fresh",
+    Head = "head",
+}
+
+/**
+ * Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+ * until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+ * without EnterWorktree, for repos where worktrees are impractical. See
+ * https://code.claude.com/docs/en/settings#worktree-settings
+ */
+export enum BgIsolation {
+    None = "none",
+    Worktree = "worktree",
 }
 
 /**
@@ -3670,6 +3893,7 @@ const typeMap: any = {
         { json: "modelOverrides", js: "modelOverrides", typ: u(undefined, m("")) },
         { json: "otelHeadersHelper", js: "otelHeadersHelper", typ: u(undefined, "") },
         { json: "outputStyle", js: "outputStyle", typ: u(undefined, "") },
+        { json: "parentSettingsBehavior", js: "parentSettingsBehavior", typ: u(undefined, r("ParentSettingsBehavior")) },
         { json: "permissions", js: "permissions", typ: u(undefined, r("Permissions")) },
         { json: "plansDirectory", js: "plansDirectory", typ: u(undefined, "") },
         { json: "pluginConfigs", js: "pluginConfigs", typ: u(undefined, m(r("PluginConfig"))) },
@@ -3681,6 +3905,7 @@ const typeMap: any = {
         { json: "showClearContextOnPlanAccept", js: "showClearContextOnPlanAccept", typ: u(undefined, true) },
         { json: "showThinkingSummaries", js: "showThinkingSummaries", typ: u(undefined, true) },
         { json: "showTurnDuration", js: "showTurnDuration", typ: u(undefined, true) },
+        { json: "skillOverrides", js: "skillOverrides", typ: u(undefined, m(r("SkillOverride"))) },
         { json: "skipDangerousModePermissionPrompt", js: "skipDangerousModePermissionPrompt", typ: u(undefined, true) },
         { json: "skippedMarketplaces", js: "skippedMarketplaces", typ: u(undefined, a("")) },
         { json: "skippedPlugins", js: "skippedPlugins", typ: u(undefined, a("")) },
@@ -3691,6 +3916,7 @@ const typeMap: any = {
         { json: "statusLine", js: "statusLine", typ: u(undefined, r("StatusLine")) },
         { json: "strictKnownMarketplaces", js: "strictKnownMarketplaces", typ: u(undefined, a(r("StrictKnownMarketplace"))) },
         { json: "strictPluginOnlyCustomization", js: "strictPluginOnlyCustomization", typ: u(undefined, u(a(r("StrictPluginOnlyCustomizationElement")), true)) },
+        { json: "subagentStatusLine", js: "subagentStatusLine", typ: u(undefined, r("SubagentStatusLine")) },
         { json: "teammateMode", js: "teammateMode", typ: u(undefined, r("TeammateMode")) },
         { json: "terminalProgressBarEnabled", js: "terminalProgressBarEnabled", typ: u(undefined, true) },
         { json: "tui", js: "tui", typ: u(undefined, r("Tui")) },
@@ -3712,6 +3938,7 @@ const typeMap: any = {
     "AutoMode": o([
         { json: "allow", js: "allow", typ: u(undefined, a("")) },
         { json: "environment", js: "environment", typ: u(undefined, a("")) },
+        { json: "hard_deny", js: "hard_deny", typ: u(undefined, a("")) },
         { json: "soft_deny", js: "soft_deny", typ: u(undefined, a("")) },
     ], false),
     "BlockedMarketplace": o([
@@ -3753,6 +3980,7 @@ const typeMap: any = {
         { json: "ANTHROPIC_SMALL_FAST_MODEL", js: "ANTHROPIC_SMALL_FAST_MODEL", typ: u(undefined, "") },
         { json: "ANTHROPIC_VERTEX_BASE_URL", js: "ANTHROPIC_VERTEX_BASE_URL", typ: u(undefined, "") },
         { json: "ANTHROPIC_VERTEX_PROJECT_ID", js: "ANTHROPIC_VERTEX_PROJECT_ID", typ: u(undefined, "") },
+        { json: "ANTHROPIC_WORKSPACE_ID", js: "ANTHROPIC_WORKSPACE_ID", typ: u(undefined, "") },
         { json: "API_TIMEOUT_MS", js: "API_TIMEOUT_MS", typ: u(undefined, "") },
         { json: "AWS_BEARER_TOKEN_BEDROCK", js: "AWS_BEARER_TOKEN_BEDROCK", typ: u(undefined, "") },
         { json: "BASH_DEFAULT_TIMEOUT_MS", js: "BASH_DEFAULT_TIMEOUT_MS", typ: u(undefined, "") },
@@ -3778,6 +4006,7 @@ const typeMap: any = {
         { json: "CLAUDE_CODE_DEBUG_LOGS_DIR", js: "CLAUDE_CODE_DEBUG_LOGS_DIR", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_DISABLE_1M_CONTEXT", js: "CLAUDE_CODE_DISABLE_1M_CONTEXT", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING", js: "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING", typ: u(undefined, r("CcrForceBundle")) },
+        { json: "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN", js: "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_DISABLE_ATTACHMENTS", js: "CLAUDE_CODE_DISABLE_ATTACHMENTS", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_DISABLE_AUTO_MEMORY", js: "CLAUDE_CODE_DISABLE_AUTO_MEMORY", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", js: "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", typ: u(undefined, r("CcrForceBundle")) },
@@ -3800,7 +4029,9 @@ const typeMap: any = {
         { json: "CLAUDE_CODE_EFFORT_LEVEL", js: "CLAUDE_CODE_EFFORT_LEVEL", typ: u(undefined, r("ClaudeCodeEffortLevel")) },
         { json: "CLAUDE_CODE_ENABLE_AWAY_SUMMARY", js: "CLAUDE_CODE_ENABLE_AWAY_SUMMARY", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_ENABLE_BACKGROUND_PLUGIN_REFRESH", js: "CLAUDE_CODE_ENABLE_BACKGROUND_PLUGIN_REFRESH", typ: u(undefined, r("CcrForceBundle")) },
+        { json: "CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL", js: "CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING", js: "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING", typ: u(undefined, r("CcrForceBundle")) },
+        { json: "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", js: "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION", js: "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION", typ: u(undefined, r("ClaudeCodeAutoConnectIDE")) },
         { json: "CLAUDE_CODE_ENABLE_TASKS", js: "CLAUDE_CODE_ENABLE_TASKS", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_ENABLE_TELEMETRY", js: "CLAUDE_CODE_ENABLE_TELEMETRY", typ: u(undefined, r("CcrForceBundle")) },
@@ -3808,6 +4039,7 @@ const typeMap: any = {
         { json: "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", js: "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_EXTRA_BODY", js: "CLAUDE_CODE_EXTRA_BODY", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS", js: "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS", typ: u(undefined, "") },
+        { json: "CLAUDE_CODE_FORCE_SYNC_OUTPUT", js: "CLAUDE_CODE_FORCE_SYNC_OUTPUT", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_FORK_SUBAGENT", js: "CLAUDE_CODE_FORK_SUBAGENT", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_GIT_BASH_PATH", js: "CLAUDE_CODE_GIT_BASH_PATH", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_GLOB_HIDDEN", js: "CLAUDE_CODE_GLOB_HIDDEN", typ: u(undefined, r("ClaudeCodeAutoConnectIDE")) },
@@ -3827,14 +4059,18 @@ const typeMap: any = {
         { json: "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", js: "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_OAUTH_SCOPES", js: "CLAUDE_CODE_OAUTH_SCOPES", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_OAUTH_TOKEN", js: "CLAUDE_CODE_OAUTH_TOKEN", typ: u(undefined, "") },
+        { json: "CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE", js: "CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_OTEL_FLUSH_TIMEOUT_MS", js: "CLAUDE_CODE_OTEL_FLUSH_TIMEOUT_MS", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS", js: "CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_OTEL_SHUTDOWN_TIMEOUT_MS", js: "CLAUDE_CODE_OTEL_SHUTDOWN_TIMEOUT_MS", typ: u(undefined, "") },
+        { json: "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE", js: "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_PERFORCE_MODE", js: "CLAUDE_CODE_PERFORCE_MODE", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_PLUGIN_CACHE_DIR", js: "CLAUDE_CODE_PLUGIN_CACHE_DIR", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS", js: "CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE", js: "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE", typ: u(undefined, r("CcrForceBundle")) },
+        { json: "CLAUDE_CODE_PLUGIN_PREFER_HTTPS", js: "CLAUDE_CODE_PLUGIN_PREFER_HTTPS", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_PLUGIN_SEED_DIR", js: "CLAUDE_CODE_PLUGIN_SEED_DIR", typ: u(undefined, "") },
+        { json: "CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY", js: "CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST", js: "CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_PROXY_RESOLVES_HOSTS", js: "CLAUDE_CODE_PROXY_RESOLVES_HOSTS", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_REMOTE", js: "CLAUDE_CODE_REMOTE", typ: u(undefined, r("ClaudeCodeAutoConnectIDE")) },
@@ -3852,6 +4088,7 @@ const typeMap: any = {
         { json: "CLAUDE_CODE_SKIP_MANTLE_AUTH", js: "CLAUDE_CODE_SKIP_MANTLE_AUTH", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_SKIP_PROMPT_HISTORY", js: "CLAUDE_CODE_SKIP_PROMPT_HISTORY", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_SKIP_VERTEX_AUTH", js: "CLAUDE_CODE_SKIP_VERTEX_AUTH", typ: u(undefined, r("CcrForceBundle")) },
+        { json: "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP", js: "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_SUBAGENT_MODEL", js: "CLAUDE_CODE_SUBAGENT_MODEL", typ: u(undefined, "") },
         { json: "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", js: "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", typ: u(undefined, r("CcrForceBundle")) },
         { json: "CLAUDE_CODE_SYNC_PLUGIN_INSTALL", js: "CLAUDE_CODE_SYNC_PLUGIN_INSTALL", typ: u(undefined, r("CcrForceBundle")) },
@@ -3932,6 +4169,7 @@ const typeMap: any = {
         { json: "matcher", js: "matcher", typ: u(undefined, "") },
     ], false),
     "HookElement": o([
+        { json: "args", js: "args", typ: u(undefined, a("")) },
         { json: "async", js: "async", typ: u(undefined, true) },
         { json: "asyncRewake", js: "asyncRewake", typ: u(undefined, true) },
         { json: "command", js: "command", typ: u(undefined, "") },
@@ -3940,6 +4178,7 @@ const typeMap: any = {
         { json: "statusMessage", js: "statusMessage", typ: u(undefined, "") },
         { json: "timeout", js: "timeout", typ: u(undefined, 3.14) },
         { json: "type", js: "type", typ: r("HookType") },
+        { json: "continueOnBlock", js: "continueOnBlock", typ: u(undefined, true) },
         { json: "model", js: "model", typ: u(undefined, "") },
         { json: "prompt", js: "prompt", typ: u(undefined, "") },
         { json: "allowedEnvVars", js: "allowedEnvVars", typ: u(undefined, a("")) },
@@ -3965,14 +4204,18 @@ const typeMap: any = {
     "Sandbox": o([
         { json: "allowUnsandboxedCommands", js: "allowUnsandboxedCommands", typ: u(undefined, true) },
         { json: "autoAllowBashIfSandboxed", js: "autoAllowBashIfSandboxed", typ: u(undefined, true) },
+        { json: "bwrapPath", js: "bwrapPath", typ: u(undefined, "") },
         { json: "enabled", js: "enabled", typ: u(undefined, true) },
+        { json: "enabledPlatforms", js: "enabledPlatforms", typ: u(undefined, a(r("EnabledPlatform"))) },
         { json: "enableWeakerNestedSandbox", js: "enableWeakerNestedSandbox", typ: u(undefined, true) },
         { json: "enableWeakerNetworkIsolation", js: "enableWeakerNetworkIsolation", typ: u(undefined, true) },
         { json: "excludedCommands", js: "excludedCommands", typ: u(undefined, a("")) },
+        { json: "failIfUnavailable", js: "failIfUnavailable", typ: u(undefined, true) },
         { json: "filesystem", js: "filesystem", typ: u(undefined, r("Filesystem")) },
         { json: "ignoreViolations", js: "ignoreViolations", typ: u(undefined, m(a(""))) },
         { json: "network", js: "network", typ: u(undefined, r("Network")) },
         { json: "ripgrep", js: "ripgrep", typ: u(undefined, r("Ripgrep")) },
+        { json: "socatPath", js: "socatPath", typ: u(undefined, "") },
     ], false),
     "Filesystem": o([
         { json: "allowManagedReadPathsOnly", js: "allowManagedReadPathsOnly", typ: u(undefined, true) },
@@ -4006,6 +4249,7 @@ const typeMap: any = {
     ], false),
     "StatusLine": o([
         { json: "command", js: "command", typ: "" },
+        { json: "hideVimModeIndicator", js: "hideVimModeIndicator", typ: u(undefined, true) },
         { json: "padding", js: "padding", typ: u(undefined, 3.14) },
         { json: "refreshInterval", js: "refreshInterval", typ: u(undefined, 0) },
         { json: "type", js: "type", typ: r("FileSuggestionType") },
@@ -4021,7 +4265,13 @@ const typeMap: any = {
         { json: "package", js: "package", typ: u(undefined, "") },
         { json: "pathPattern", js: "pathPattern", typ: u(undefined, "") },
     ], false),
+    "SubagentStatusLine": o([
+        { json: "command", js: "command", typ: "" },
+        { json: "type", js: "type", typ: r("FileSuggestionType") },
+    ], false),
     "Worktree": o([
+        { json: "baseRef", js: "baseRef", typ: u(undefined, r("BaseRef")) },
+        { json: "bgIsolation", js: "bgIsolation", typ: u(undefined, r("BgIsolation")) },
         { json: "sparsePaths", js: "sparsePaths", typ: u(undefined, a("")) },
     ], false),
     "ClaudeCodeAgentFrontmatter": o([
@@ -4180,6 +4430,10 @@ const typeMap: any = {
         "claudeai",
         "console",
     ],
+    "ParentSettingsBehavior": [
+        "first-wins",
+        "merge",
+    ],
     "DefaultMode": [
         "acceptEdits",
         "auto",
@@ -4188,6 +4442,18 @@ const typeMap: any = {
         "delegate",
         "dontAsk",
         "plan",
+    ],
+    "EnabledPlatform": [
+        "linux",
+        "macos",
+        "windows",
+        "wsl",
+    ],
+    "SkillOverride": [
+        "name-only",
+        "off",
+        "on",
+        "user-invocable-only",
     ],
     "Mode": [
         "append",
@@ -4212,6 +4478,14 @@ const typeMap: any = {
         "default",
         "focus",
         "verbose",
+    ],
+    "BaseRef": [
+        "fresh",
+        "head",
+    ],
+    "BgIsolation": [
+        "none",
+        "worktree",
     ],
     "Color": [
         "blue",

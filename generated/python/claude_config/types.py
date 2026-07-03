@@ -1458,15 +1458,22 @@ class AutoMode:
     environment context entirely unless the literal string "$defaults" is included as an
     entry, which splices the built-in defaults in at that position.
     """
+    hard_deny: Optional[List[str]]
+    """Rules for the auto mode classifier hard-deny section. Hard-deny rules block
+    unconditionally regardless of user intent. Replaces the built-in hard-deny rules entirely
+    unless the literal string "$defaults" is included as an entry, which splices the built-in
+    defaults in at that position. See https://code.claude.com/docs/en/permissions
+    """
     soft_deny: Optional[List[str]]
     """Rules for the auto mode classifier soft-deny section. Replaces the built-in soft-deny
     rules entirely unless the literal string "$defaults" is included as an entry, which
     splices the built-in defaults in at that position.
     """
 
-    def __init__(self, allow: Optional[List[str]], environment: Optional[List[str]], soft_deny: Optional[List[str]]) -> None:
+    def __init__(self, allow: Optional[List[str]], environment: Optional[List[str]], hard_deny: Optional[List[str]], soft_deny: Optional[List[str]]) -> None:
         self.allow = allow
         self.environment = environment
+        self.hard_deny = hard_deny
         self.soft_deny = soft_deny
 
     @staticmethod
@@ -1474,8 +1481,9 @@ class AutoMode:
         assert isinstance(obj, dict)
         allow = from_union([lambda x: from_list(from_str, x), from_none], obj.get("allow"))
         environment = from_union([lambda x: from_list(from_str, x), from_none], obj.get("environment"))
+        hard_deny = from_union([lambda x: from_list(from_str, x), from_none], obj.get("hard_deny"))
         soft_deny = from_union([lambda x: from_list(from_str, x), from_none], obj.get("soft_deny"))
-        return AutoMode(allow, environment, soft_deny)
+        return AutoMode(allow, environment, hard_deny, soft_deny)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -1483,6 +1491,8 @@ class AutoMode:
             result["allow"] = from_union([lambda x: from_list(from_str, x), from_none], self.allow)
         if self.environment is not None:
             result["environment"] = from_union([lambda x: from_list(from_str, x), from_none], self.environment)
+        if self.hard_deny is not None:
+            result["hard_deny"] = from_union([lambda x: from_list(from_str, x), from_none], self.hard_deny)
         if self.soft_deny is not None:
             result["soft_deny"] = from_union([lambda x: from_list(from_str, x), from_none], self.soft_deny)
         return result
@@ -1850,6 +1860,11 @@ class HookElement:
     MCP tool hook. Call a tool on an already-connected MCP server. See
     https://code.claude.com/docs/en/hooks#mcp-tool-hook-fields
     """
+    args: Optional[List[str]]
+    """Argument list for exec form. When present, spawns the command directly without shell
+    interpretation — each element is passed as-is, so path placeholders never need quoting.
+    See https://code.claude.com/docs/en/hooks#command-hook-fields
+    """
     setting_async: Optional[bool]
     """Run this hook asynchronously without blocking Claude Code"""
 
@@ -1888,6 +1903,11 @@ class HookElement:
     type: HookType
     """Hook type"""
 
+    continue_on_block: Optional[bool]
+    """When the prompt returns ok: false, feed the reason back to Claude and continue the turn
+    instead of stopping. Implemented as continue: true on the resulting decision: "block".
+    See https://code.claude.com/docs/en/hooks#prompt-hook-configuration
+    """
     model: Optional[str]
     """Model to use for evaluation. Defaults to a fast model"""
 
@@ -1917,7 +1937,8 @@ class HookElement:
     tool: Optional[str]
     """Name of the tool to call on that server"""
 
-    def __init__(self, setting_async: Optional[bool], async_rewake: Optional[bool], command: Optional[str], setting_if: Optional[str], shell: Optional[Shell], status_message: Optional[str], timeout: Optional[float], type: HookType, model: Optional[str], prompt: Optional[str], allowed_env_vars: Optional[List[str]], headers: Optional[Dict[str, str]], url: Optional[str], input: Optional[Dict[str, Any]], server: Optional[str], tool: Optional[str]) -> None:
+    def __init__(self, args: Optional[List[str]], setting_async: Optional[bool], async_rewake: Optional[bool], command: Optional[str], setting_if: Optional[str], shell: Optional[Shell], status_message: Optional[str], timeout: Optional[float], type: HookType, continue_on_block: Optional[bool], model: Optional[str], prompt: Optional[str], allowed_env_vars: Optional[List[str]], headers: Optional[Dict[str, str]], url: Optional[str], input: Optional[Dict[str, Any]], server: Optional[str], tool: Optional[str]) -> None:
+        self.args = args
         self.setting_async = setting_async
         self.async_rewake = async_rewake
         self.command = command
@@ -1926,6 +1947,7 @@ class HookElement:
         self.status_message = status_message
         self.timeout = timeout
         self.type = type
+        self.continue_on_block = continue_on_block
         self.model = model
         self.prompt = prompt
         self.allowed_env_vars = allowed_env_vars
@@ -1938,6 +1960,7 @@ class HookElement:
     @staticmethod
     def from_dict(obj: Any) -> 'HookElement':
         assert isinstance(obj, dict)
+        args = from_union([lambda x: from_list(from_str, x), from_none], obj.get("args"))
         setting_async = from_union([from_bool, from_none], obj.get("async"))
         async_rewake = from_union([from_bool, from_none], obj.get("asyncRewake"))
         command = from_union([from_str, from_none], obj.get("command"))
@@ -1946,6 +1969,7 @@ class HookElement:
         status_message = from_union([from_str, from_none], obj.get("statusMessage"))
         timeout = from_union([from_float, from_none], obj.get("timeout"))
         type = HookType(obj.get("type"))
+        continue_on_block = from_union([from_bool, from_none], obj.get("continueOnBlock"))
         model = from_union([from_str, from_none], obj.get("model"))
         prompt = from_union([from_str, from_none], obj.get("prompt"))
         allowed_env_vars = from_union([lambda x: from_list(from_str, x), from_none], obj.get("allowedEnvVars"))
@@ -1954,10 +1978,12 @@ class HookElement:
         input = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("input"))
         server = from_union([from_str, from_none], obj.get("server"))
         tool = from_union([from_str, from_none], obj.get("tool"))
-        return HookElement(setting_async, async_rewake, command, setting_if, shell, status_message, timeout, type, model, prompt, allowed_env_vars, headers, url, input, server, tool)
+        return HookElement(args, setting_async, async_rewake, command, setting_if, shell, status_message, timeout, type, continue_on_block, model, prompt, allowed_env_vars, headers, url, input, server, tool)
 
     def to_dict(self) -> dict:
         result: dict = {}
+        if self.args is not None:
+            result["args"] = from_union([lambda x: from_list(from_str, x), from_none], self.args)
         if self.setting_async is not None:
             result["async"] = from_union([from_bool, from_none], self.setting_async)
         if self.async_rewake is not None:
@@ -1973,6 +1999,8 @@ class HookElement:
         if self.timeout is not None:
             result["timeout"] = from_union([to_float, from_none], self.timeout)
         result["type"] = to_enum(HookType, self.type)
+        if self.continue_on_block is not None:
+            result["continueOnBlock"] = from_union([from_bool, from_none], self.continue_on_block)
         if self.model is not None:
             result["model"] = from_union([from_str, from_none], self.model)
         if self.prompt is not None:
@@ -2274,6 +2302,15 @@ class HooksClass:
         return result
 
 
+class ParentSettingsBehavior(Enum):
+    """(Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+    inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+    arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+    """
+    FIRST_WINS = "first-wins"
+    MERGE = "merge"
+
+
 class DefaultMode(Enum):
     """Default permission mode.
     "default": prompts on first use.
@@ -2404,6 +2441,13 @@ class PluginConfig:
         if self.options is not None:
             result["options"] = from_union([lambda x: from_dict(lambda x: from_union([to_float, from_bool, lambda x: from_list(from_str, x), from_str], x), x), from_none], self.options)
         return result
+
+
+class EnabledPlatform(Enum):
+    LINUX = "linux"
+    MACOS = "macos"
+    WINDOWS = "windows"
+    WSL = "wsl"
 
 
 class Filesystem:
@@ -2606,9 +2650,19 @@ class Sandbox:
     applies to commands that will run sandboxed. See
     https://code.claude.com/docs/en/sandboxing#sandbox-modes
     """
+    bwrap_path: Optional[str]
+    """(Managed setting only) Path to custom bubblewrap (bwrap) binary for Linux/WSL sandbox.
+    Overrides default. See https://code.claude.com/docs/en/server-managed-settings
+    """
     enabled: Optional[bool]
     """Enable sandboxed bash. See https://code.claude.com/docs/en/sandboxing#enable-sandboxing"""
 
+    enabled_platforms: Optional[List[EnabledPlatform]]
+    """Limit the entire sandbox configuration to the listed platforms. On platforms not in the
+    list the sandbox config is inert: no sandbox, no auto-allow, no startup warning, and no
+    failIfUnavailable exit. When omitted, all supported platforms are included. Only honored
+    from managed (policy) settings.
+    """
     enable_weaker_nested_sandbox: Optional[bool]
     """Enable weaker sandbox mode for unprivileged docker environments where --proc mounting
     fails. This significantly reduces the strength of the sandbox and should only be used
@@ -2626,6 +2680,11 @@ class Sandbox:
     """Commands that should never run in the sandbox (e.g., ["git", "docker"]). See
     https://code.claude.com/docs/en/sandboxing#configure-sandboxing
     """
+    fail_if_unavailable: Optional[bool]
+    """When true, make sandbox startup a hard failure if required sandbox dependencies are
+    missing. Default: false (sandbox is skipped with a warning). See
+    https://code.claude.com/docs/en/sandboxing#enable-sandboxing
+    """
     filesystem: Optional[Filesystem]
     """Filesystem access control for sandboxed commands. See
     https://code.claude.com/docs/en/sandboxing#filesystem-isolation
@@ -2642,33 +2701,45 @@ class Sandbox:
     """Custom ripgrep configuration for Claude Code's bundled ripgrep support. Overrides the
     bundled binary and arguments.
     """
+    socat_path: Optional[str]
+    """(Managed setting only) Path to custom socat binary for Linux/WSL network proxying.
+    Overrides default. See https://code.claude.com/docs/en/server-managed-settings
+    """
 
-    def __init__(self, allow_unsandboxed_commands: Optional[bool], auto_allow_bash_if_sandboxed: Optional[bool], enabled: Optional[bool], enable_weaker_nested_sandbox: Optional[bool], enable_weaker_network_isolation: Optional[bool], excluded_commands: Optional[List[str]], filesystem: Optional[Filesystem], ignore_violations: Optional[Dict[str, List[str]]], network: Optional[Network], ripgrep: Optional[Ripgrep]) -> None:
+    def __init__(self, allow_unsandboxed_commands: Optional[bool], auto_allow_bash_if_sandboxed: Optional[bool], bwrap_path: Optional[str], enabled: Optional[bool], enabled_platforms: Optional[List[EnabledPlatform]], enable_weaker_nested_sandbox: Optional[bool], enable_weaker_network_isolation: Optional[bool], excluded_commands: Optional[List[str]], fail_if_unavailable: Optional[bool], filesystem: Optional[Filesystem], ignore_violations: Optional[Dict[str, List[str]]], network: Optional[Network], ripgrep: Optional[Ripgrep], socat_path: Optional[str]) -> None:
         self.allow_unsandboxed_commands = allow_unsandboxed_commands
         self.auto_allow_bash_if_sandboxed = auto_allow_bash_if_sandboxed
+        self.bwrap_path = bwrap_path
         self.enabled = enabled
+        self.enabled_platforms = enabled_platforms
         self.enable_weaker_nested_sandbox = enable_weaker_nested_sandbox
         self.enable_weaker_network_isolation = enable_weaker_network_isolation
         self.excluded_commands = excluded_commands
+        self.fail_if_unavailable = fail_if_unavailable
         self.filesystem = filesystem
         self.ignore_violations = ignore_violations
         self.network = network
         self.ripgrep = ripgrep
+        self.socat_path = socat_path
 
     @staticmethod
     def from_dict(obj: Any) -> 'Sandbox':
         assert isinstance(obj, dict)
         allow_unsandboxed_commands = from_union([from_bool, from_none], obj.get("allowUnsandboxedCommands"))
         auto_allow_bash_if_sandboxed = from_union([from_bool, from_none], obj.get("autoAllowBashIfSandboxed"))
+        bwrap_path = from_union([from_str, from_none], obj.get("bwrapPath"))
         enabled = from_union([from_bool, from_none], obj.get("enabled"))
+        enabled_platforms = from_union([lambda x: from_list(EnabledPlatform, x), from_none], obj.get("enabledPlatforms"))
         enable_weaker_nested_sandbox = from_union([from_bool, from_none], obj.get("enableWeakerNestedSandbox"))
         enable_weaker_network_isolation = from_union([from_bool, from_none], obj.get("enableWeakerNetworkIsolation"))
         excluded_commands = from_union([lambda x: from_list(from_str, x), from_none], obj.get("excludedCommands"))
+        fail_if_unavailable = from_union([from_bool, from_none], obj.get("failIfUnavailable"))
         filesystem = from_union([Filesystem.from_dict, from_none], obj.get("filesystem"))
         ignore_violations = from_union([lambda x: from_dict(lambda x: from_list(from_str, x), x), from_none], obj.get("ignoreViolations"))
         network = from_union([Network.from_dict, from_none], obj.get("network"))
         ripgrep = from_union([Ripgrep.from_dict, from_none], obj.get("ripgrep"))
-        return Sandbox(allow_unsandboxed_commands, auto_allow_bash_if_sandboxed, enabled, enable_weaker_nested_sandbox, enable_weaker_network_isolation, excluded_commands, filesystem, ignore_violations, network, ripgrep)
+        socat_path = from_union([from_str, from_none], obj.get("socatPath"))
+        return Sandbox(allow_unsandboxed_commands, auto_allow_bash_if_sandboxed, bwrap_path, enabled, enabled_platforms, enable_weaker_nested_sandbox, enable_weaker_network_isolation, excluded_commands, fail_if_unavailable, filesystem, ignore_violations, network, ripgrep, socat_path)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -2676,14 +2747,20 @@ class Sandbox:
             result["allowUnsandboxedCommands"] = from_union([from_bool, from_none], self.allow_unsandboxed_commands)
         if self.auto_allow_bash_if_sandboxed is not None:
             result["autoAllowBashIfSandboxed"] = from_union([from_bool, from_none], self.auto_allow_bash_if_sandboxed)
+        if self.bwrap_path is not None:
+            result["bwrapPath"] = from_union([from_str, from_none], self.bwrap_path)
         if self.enabled is not None:
             result["enabled"] = from_union([from_bool, from_none], self.enabled)
+        if self.enabled_platforms is not None:
+            result["enabledPlatforms"] = from_union([lambda x: from_list(lambda x: to_enum(EnabledPlatform, x), x), from_none], self.enabled_platforms)
         if self.enable_weaker_nested_sandbox is not None:
             result["enableWeakerNestedSandbox"] = from_union([from_bool, from_none], self.enable_weaker_nested_sandbox)
         if self.enable_weaker_network_isolation is not None:
             result["enableWeakerNetworkIsolation"] = from_union([from_bool, from_none], self.enable_weaker_network_isolation)
         if self.excluded_commands is not None:
             result["excludedCommands"] = from_union([lambda x: from_list(from_str, x), from_none], self.excluded_commands)
+        if self.fail_if_unavailable is not None:
+            result["failIfUnavailable"] = from_union([from_bool, from_none], self.fail_if_unavailable)
         if self.filesystem is not None:
             result["filesystem"] = from_union([lambda x: to_class(Filesystem, x), from_none], self.filesystem)
         if self.ignore_violations is not None:
@@ -2692,7 +2769,16 @@ class Sandbox:
             result["network"] = from_union([lambda x: to_class(Network, x), from_none], self.network)
         if self.ripgrep is not None:
             result["ripgrep"] = from_union([lambda x: to_class(Ripgrep, x), from_none], self.ripgrep)
+        if self.socat_path is not None:
+            result["socatPath"] = from_union([from_str, from_none], self.socat_path)
         return result
+
+
+class SkillOverride(Enum):
+    NAME_ONLY = "name-only"
+    OFF = "off"
+    ON = "on"
+    USER_INVOCABLE_ONLY = "user-invocable-only"
 
 
 class SpinnerTipsOverride:
@@ -2769,6 +2855,11 @@ class StatusLine:
     costs, git status, etc.) by reading JSON data from stdin and writing output to stdout.
     See https://code.claude.com/docs/en/statusline
     """
+    hide_vim_mode_indicator: Optional[bool]
+    """Set to true when your status line script renders the vim mode indicator itself, to
+    suppress the built-in vim mode display. See
+    https://code.claude.com/docs/en/statusline#manually-configure-a-status-line
+    """
     padding: Optional[float]
     """Optional number of extra horizontal spacing characters added to the status line content;
     defaults to 0.
@@ -2784,8 +2875,9 @@ class StatusLine:
     that receives JSON session data via stdin.
     """
 
-    def __init__(self, command: str, padding: Optional[float], refresh_interval: Optional[int], type: FileSuggestionType) -> None:
+    def __init__(self, command: str, hide_vim_mode_indicator: Optional[bool], padding: Optional[float], refresh_interval: Optional[int], type: FileSuggestionType) -> None:
         self.command = command
+        self.hide_vim_mode_indicator = hide_vim_mode_indicator
         self.padding = padding
         self.refresh_interval = refresh_interval
         self.type = type
@@ -2794,14 +2886,17 @@ class StatusLine:
     def from_dict(obj: Any) -> 'StatusLine':
         assert isinstance(obj, dict)
         command = from_str(obj.get("command"))
+        hide_vim_mode_indicator = from_union([from_bool, from_none], obj.get("hideVimModeIndicator"))
         padding = from_union([from_float, from_none], obj.get("padding"))
         refresh_interval = from_union([from_int, from_none], obj.get("refreshInterval"))
         type = FileSuggestionType(obj.get("type"))
-        return StatusLine(command, padding, refresh_interval, type)
+        return StatusLine(command, hide_vim_mode_indicator, padding, refresh_interval, type)
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["command"] = from_str(self.command)
+        if self.hide_vim_mode_indicator is not None:
+            result["hideVimModeIndicator"] = from_union([from_bool, from_none], self.hide_vim_mode_indicator)
         if self.padding is not None:
             result["padding"] = from_union([to_float, from_none], self.padding)
         if self.refresh_interval is not None:
@@ -2898,6 +2993,34 @@ class StrictPluginOnlyCustomizationElement(Enum):
     SKILLS = "skills"
 
 
+class SubagentStatusLine:
+    """Status line configuration for subagent sessions. See
+    https://code.claude.com/docs/en/statusline#subagent-status-lines
+    """
+    command: str
+    """Shell command to run for the subagent status line"""
+
+    type: FileSuggestionType
+    """Must be "command\""""
+
+    def __init__(self, command: str, type: FileSuggestionType) -> None:
+        self.command = command
+        self.type = type
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SubagentStatusLine':
+        assert isinstance(obj, dict)
+        command = from_str(obj.get("command"))
+        type = FileSuggestionType(obj.get("type"))
+        return SubagentStatusLine(command, type)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["command"] = from_str(self.command)
+        result["type"] = to_enum(FileSuggestionType, self.type)
+        return result
+
+
 class TeammateMode(Enum):
     """How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process
     otherwise. Agent teams are experimental and disabled by default. Enable them by adding
@@ -2928,8 +3051,38 @@ class ViewMode(Enum):
     VERBOSE = "verbose"
 
 
+class BaseRef(Enum):
+    """Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+    fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+    https://code.claude.com/docs/en/settings#worktree-settings
+    """
+    FRESH = "fresh"
+    HEAD = "head"
+
+
+class BgIsolation(Enum):
+    """Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+    until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+    without EnterWorktree, for repos where worktrees are impractical. See
+    https://code.claude.com/docs/en/settings#worktree-settings
+    """
+    NONE = "none"
+    WORKTREE = "worktree"
+
+
 class Worktree:
     """Configuration for --worktree sessions. See
+    https://code.claude.com/docs/en/settings#worktree-settings
+    """
+    base_ref: Optional[BaseRef]
+    """Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+    fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+    https://code.claude.com/docs/en/settings#worktree-settings
+    """
+    bg_isolation: Optional[BgIsolation]
+    """Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+    until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+    without EnterWorktree, for repos where worktrees are impractical. See
     https://code.claude.com/docs/en/settings#worktree-settings
     """
     sparse_paths: Optional[List[str]]
@@ -2938,17 +3091,25 @@ class Worktree:
     https://code.claude.com/docs/en/settings#worktree-settings
     """
 
-    def __init__(self, sparse_paths: Optional[List[str]]) -> None:
+    def __init__(self, base_ref: Optional[BaseRef], bg_isolation: Optional[BgIsolation], sparse_paths: Optional[List[str]]) -> None:
+        self.base_ref = base_ref
+        self.bg_isolation = bg_isolation
         self.sparse_paths = sparse_paths
 
     @staticmethod
     def from_dict(obj: Any) -> 'Worktree':
         assert isinstance(obj, dict)
+        base_ref = from_union([BaseRef, from_none], obj.get("baseRef"))
+        bg_isolation = from_union([BgIsolation, from_none], obj.get("bgIsolation"))
         sparse_paths = from_union([lambda x: from_list(from_str, x), from_none], obj.get("sparsePaths"))
-        return Worktree(sparse_paths)
+        return Worktree(base_ref, bg_isolation, sparse_paths)
 
     def to_dict(self) -> dict:
         result: dict = {}
+        if self.base_ref is not None:
+            result["baseRef"] = from_union([lambda x: to_enum(BaseRef, x), from_none], self.base_ref)
+        if self.bg_isolation is not None:
+            result["bgIsolation"] = from_union([lambda x: to_enum(BgIsolation, x), from_none], self.bg_isolation)
         if self.sparse_paths is not None:
             result["sparsePaths"] = from_union([lambda x: from_list(from_str, x), from_none], self.sparse_paths)
         return result
@@ -3139,9 +3300,10 @@ class ClaudeCodeSettings:
     https://code.claude.com/docs/en/plugin-marketplaces
     """
     fast_mode: Optional[bool]
-    """Enable fast mode for Opus 4.6 (research preview). Fast mode uses the same model with 2.5x
-    faster output at higher per-token cost. Requires extra usage enabled. Alternatively,
-    toggle with /fast command. See https://code.claude.com/docs/en/fast-mode
+    """Enable fast mode, which uses Claude Opus 4.7 by default for 2.5x faster output at higher
+    per-token cost. Requires extra usage enabled. Toggle with /fast command. Set
+    CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1 to pin fast mode to Opus 4.6. See
+    https://code.claude.com/docs/en/fast-mode
     """
     fast_mode_per_session_opt_in: Optional[bool]
     """Require per-session opt-in for fast mode. When true, fast mode does not persist across
@@ -3220,6 +3382,11 @@ class ClaudeCodeSettings:
     Learning. Custom styles can be added in ~/.claude/output-styles/ or
     .claude/output-styles/. See https://code.claude.com/docs/en/output-styles
     """
+    parent_settings_behavior: Optional[ParentSettingsBehavior]
+    """(Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+    inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+    arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+    """
     permissions: Optional[Permissions]
     """Tool usage permissions configuration.
     See https://code.claude.com/docs/en/permissions and
@@ -3269,6 +3436,13 @@ class ClaudeCodeSettings:
     """Show turn duration messages after responses (e.g., "Cooked for 1m 6s"). Set to false to
     hide these messages (default: true)
     """
+    skill_overrides: Optional[Dict[str, SkillOverride]]
+    """Per-skill visibility overrides. Controls whether skills appear to Claude and in the /
+    picker. Values: 'on' (name and description shown, default), 'name-only' (name only),
+    'user-invocable-only' (hidden from Claude, visible in /), 'off' (hidden everywhere).
+    Plugin skills are not affected by this setting. See
+    https://code.claude.com/docs/en/skills#override-skill-visibility-from-settings
+    """
     skip_dangerous_mode_permission_prompt: Optional[bool]
     """Whether the user has accepted the bypass permissions mode dialog. Typically managed by
     the CLI rather than set by hand.
@@ -3307,6 +3481,10 @@ class ClaudeCodeSettings:
     """(Managed settings) Block non-plugin customization sources for the listed surfaces. Array
     form locks specific surfaces (e.g., ["skills", "hooks"]); true locks all four; false is
     an explicit no-op. See https://code.claude.com/docs/en/plugins-reference
+    """
+    subagent_status_line: Optional[SubagentStatusLine]
+    """Status line configuration for subagent sessions. See
+    https://code.claude.com/docs/en/statusline#subagent-status-lines
     """
     teammate_mode: Optional[TeammateMode]
     """How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process
@@ -3352,7 +3530,7 @@ class ClaudeCodeSettings:
     https://code.claude.com/docs/en/settings#available-settings
     """
 
-    def __init__(self, schema: Optional[str], agent: Optional[str], allowed_channel_plugins: Optional[List[str]], allowed_http_hook_urls: Optional[List[str]], allowed_mcp_servers: Optional[List[AllowedMCPServer]], allow_managed_hooks_only: Optional[bool], allow_managed_mcp_servers_only: Optional[bool], allow_managed_permission_rules_only: Optional[bool], always_thinking_enabled: Optional[bool], api_key_helper: Optional[str], attribution: Optional[Attribution], auto_memory_directory: Optional[str], auto_memory_enabled: Optional[bool], auto_mode: Optional[AutoMode], auto_updates_channel: Optional[AutoUpdatesChannel], available_models: Optional[List[str]], aws_auth_refresh: Optional[str], aws_credential_export: Optional[str], blocked_marketplaces: Optional[List[BlockedMarketplace]], channels_enabled: Optional[bool], claude_md_excludes: Optional[List[str]], cleanup_period_days: Optional[int], company_announcements: Optional[List[str]], default_shell: Optional[Shell], denied_mcp_servers: Optional[List[DeniedMCPServer]], disable_all_hooks: Optional[bool], disable_deep_link_registration: Optional[Disable], disabled_mcpjson_servers: Optional[List[str]], disable_skill_shell_execution: Optional[bool], effort_level: Optional[Effort], enable_all_project_mcp_servers: Optional[bool], enabled_mcpjson_servers: Optional[List[str]], enabled_plugins: Optional[Dict[str, Any]], env: Optional[Dict[str, str]], extra_known_marketplaces: Optional[Dict[str, ExtraKnownMarketplace]], fast_mode: Optional[bool], fast_mode_per_session_opt_in: Optional[bool], feedback_survey_rate: Optional[float], file_suggestion: Optional[FileSuggestion], force_login_method: Optional[ForceLoginMethod], force_login_org_uuid: Optional[str], force_remote_settings_refresh: Optional[bool], hooks: Optional[HooksClass], http_hook_allowed_env_vars: Optional[List[str]], include_co_authored_by: Optional[bool], include_git_instructions: Optional[bool], language: Optional[str], minimum_version: Optional[str], model: Optional[str], model_overrides: Optional[Dict[str, str]], otel_headers_helper: Optional[str], output_style: Optional[str], permissions: Optional[Permissions], plans_directory: Optional[str], plugin_configs: Optional[Dict[str, PluginConfig]], plugin_trust_message: Optional[str], prefers_reduced_motion: Optional[bool], pr_url_template: Optional[str], respect_gitignore: Optional[bool], sandbox: Optional[Sandbox], show_clear_context_on_plan_accept: Optional[bool], show_thinking_summaries: Optional[bool], show_turn_duration: Optional[bool], skip_dangerous_mode_permission_prompt: Optional[bool], skipped_marketplaces: Optional[List[str]], skipped_plugins: Optional[List[str]], skip_web_fetch_preflight: Optional[bool], spinner_tips_enabled: Optional[bool], spinner_tips_override: Optional[SpinnerTipsOverride], spinner_verbs: Optional[SpinnerVerbs], status_line: Optional[StatusLine], strict_known_marketplaces: Optional[List[StrictKnownMarketplace]], strict_plugin_only_customization: Optional[Union[bool, List[StrictPluginOnlyCustomizationElement]]], teammate_mode: Optional[TeammateMode], terminal_progress_bar_enabled: Optional[bool], tui: Optional[Tui], use_auto_mode_during_plan: Optional[bool], view_mode: Optional[ViewMode], voice_enabled: Optional[bool], worktree: Optional[Worktree], wsl_inherits_windows_settings: Optional[bool]) -> None:
+    def __init__(self, schema: Optional[str], agent: Optional[str], allowed_channel_plugins: Optional[List[str]], allowed_http_hook_urls: Optional[List[str]], allowed_mcp_servers: Optional[List[AllowedMCPServer]], allow_managed_hooks_only: Optional[bool], allow_managed_mcp_servers_only: Optional[bool], allow_managed_permission_rules_only: Optional[bool], always_thinking_enabled: Optional[bool], api_key_helper: Optional[str], attribution: Optional[Attribution], auto_memory_directory: Optional[str], auto_memory_enabled: Optional[bool], auto_mode: Optional[AutoMode], auto_updates_channel: Optional[AutoUpdatesChannel], available_models: Optional[List[str]], aws_auth_refresh: Optional[str], aws_credential_export: Optional[str], blocked_marketplaces: Optional[List[BlockedMarketplace]], channels_enabled: Optional[bool], claude_md_excludes: Optional[List[str]], cleanup_period_days: Optional[int], company_announcements: Optional[List[str]], default_shell: Optional[Shell], denied_mcp_servers: Optional[List[DeniedMCPServer]], disable_all_hooks: Optional[bool], disable_deep_link_registration: Optional[Disable], disabled_mcpjson_servers: Optional[List[str]], disable_skill_shell_execution: Optional[bool], effort_level: Optional[Effort], enable_all_project_mcp_servers: Optional[bool], enabled_mcpjson_servers: Optional[List[str]], enabled_plugins: Optional[Dict[str, Any]], env: Optional[Dict[str, str]], extra_known_marketplaces: Optional[Dict[str, ExtraKnownMarketplace]], fast_mode: Optional[bool], fast_mode_per_session_opt_in: Optional[bool], feedback_survey_rate: Optional[float], file_suggestion: Optional[FileSuggestion], force_login_method: Optional[ForceLoginMethod], force_login_org_uuid: Optional[str], force_remote_settings_refresh: Optional[bool], hooks: Optional[HooksClass], http_hook_allowed_env_vars: Optional[List[str]], include_co_authored_by: Optional[bool], include_git_instructions: Optional[bool], language: Optional[str], minimum_version: Optional[str], model: Optional[str], model_overrides: Optional[Dict[str, str]], otel_headers_helper: Optional[str], output_style: Optional[str], parent_settings_behavior: Optional[ParentSettingsBehavior], permissions: Optional[Permissions], plans_directory: Optional[str], plugin_configs: Optional[Dict[str, PluginConfig]], plugin_trust_message: Optional[str], prefers_reduced_motion: Optional[bool], pr_url_template: Optional[str], respect_gitignore: Optional[bool], sandbox: Optional[Sandbox], show_clear_context_on_plan_accept: Optional[bool], show_thinking_summaries: Optional[bool], show_turn_duration: Optional[bool], skill_overrides: Optional[Dict[str, SkillOverride]], skip_dangerous_mode_permission_prompt: Optional[bool], skipped_marketplaces: Optional[List[str]], skipped_plugins: Optional[List[str]], skip_web_fetch_preflight: Optional[bool], spinner_tips_enabled: Optional[bool], spinner_tips_override: Optional[SpinnerTipsOverride], spinner_verbs: Optional[SpinnerVerbs], status_line: Optional[StatusLine], strict_known_marketplaces: Optional[List[StrictKnownMarketplace]], strict_plugin_only_customization: Optional[Union[bool, List[StrictPluginOnlyCustomizationElement]]], subagent_status_line: Optional[SubagentStatusLine], teammate_mode: Optional[TeammateMode], terminal_progress_bar_enabled: Optional[bool], tui: Optional[Tui], use_auto_mode_during_plan: Optional[bool], view_mode: Optional[ViewMode], voice_enabled: Optional[bool], worktree: Optional[Worktree], wsl_inherits_windows_settings: Optional[bool]) -> None:
         self.schema = schema
         self.agent = agent
         self.allowed_channel_plugins = allowed_channel_plugins
@@ -3405,6 +3583,7 @@ class ClaudeCodeSettings:
         self.model_overrides = model_overrides
         self.otel_headers_helper = otel_headers_helper
         self.output_style = output_style
+        self.parent_settings_behavior = parent_settings_behavior
         self.permissions = permissions
         self.plans_directory = plans_directory
         self.plugin_configs = plugin_configs
@@ -3416,6 +3595,7 @@ class ClaudeCodeSettings:
         self.show_clear_context_on_plan_accept = show_clear_context_on_plan_accept
         self.show_thinking_summaries = show_thinking_summaries
         self.show_turn_duration = show_turn_duration
+        self.skill_overrides = skill_overrides
         self.skip_dangerous_mode_permission_prompt = skip_dangerous_mode_permission_prompt
         self.skipped_marketplaces = skipped_marketplaces
         self.skipped_plugins = skipped_plugins
@@ -3426,6 +3606,7 @@ class ClaudeCodeSettings:
         self.status_line = status_line
         self.strict_known_marketplaces = strict_known_marketplaces
         self.strict_plugin_only_customization = strict_plugin_only_customization
+        self.subagent_status_line = subagent_status_line
         self.teammate_mode = teammate_mode
         self.terminal_progress_bar_enabled = terminal_progress_bar_enabled
         self.tui = tui
@@ -3490,6 +3671,7 @@ class ClaudeCodeSettings:
         model_overrides = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("modelOverrides"))
         otel_headers_helper = from_union([from_str, from_none], obj.get("otelHeadersHelper"))
         output_style = from_union([from_str, from_none], obj.get("outputStyle"))
+        parent_settings_behavior = from_union([ParentSettingsBehavior, from_none], obj.get("parentSettingsBehavior"))
         permissions = from_union([Permissions.from_dict, from_none], obj.get("permissions"))
         plans_directory = from_union([from_str, from_none], obj.get("plansDirectory"))
         plugin_configs = from_union([lambda x: from_dict(PluginConfig.from_dict, x), from_none], obj.get("pluginConfigs"))
@@ -3501,6 +3683,7 @@ class ClaudeCodeSettings:
         show_clear_context_on_plan_accept = from_union([from_bool, from_none], obj.get("showClearContextOnPlanAccept"))
         show_thinking_summaries = from_union([from_bool, from_none], obj.get("showThinkingSummaries"))
         show_turn_duration = from_union([from_bool, from_none], obj.get("showTurnDuration"))
+        skill_overrides = from_union([lambda x: from_dict(SkillOverride, x), from_none], obj.get("skillOverrides"))
         skip_dangerous_mode_permission_prompt = from_union([from_bool, from_none], obj.get("skipDangerousModePermissionPrompt"))
         skipped_marketplaces = from_union([lambda x: from_list(from_str, x), from_none], obj.get("skippedMarketplaces"))
         skipped_plugins = from_union([lambda x: from_list(from_str, x), from_none], obj.get("skippedPlugins"))
@@ -3511,6 +3694,7 @@ class ClaudeCodeSettings:
         status_line = from_union([StatusLine.from_dict, from_none], obj.get("statusLine"))
         strict_known_marketplaces = from_union([lambda x: from_list(StrictKnownMarketplace.from_dict, x), from_none], obj.get("strictKnownMarketplaces"))
         strict_plugin_only_customization = from_union([from_bool, lambda x: from_list(StrictPluginOnlyCustomizationElement, x), from_none], obj.get("strictPluginOnlyCustomization"))
+        subagent_status_line = from_union([SubagentStatusLine.from_dict, from_none], obj.get("subagentStatusLine"))
         teammate_mode = from_union([TeammateMode, from_none], obj.get("teammateMode"))
         terminal_progress_bar_enabled = from_union([from_bool, from_none], obj.get("terminalProgressBarEnabled"))
         tui = from_union([Tui, from_none], obj.get("tui"))
@@ -3519,7 +3703,7 @@ class ClaudeCodeSettings:
         voice_enabled = from_union([from_bool, from_none], obj.get("voiceEnabled"))
         worktree = from_union([Worktree.from_dict, from_none], obj.get("worktree"))
         wsl_inherits_windows_settings = from_union([from_bool, from_none], obj.get("wslInheritsWindowsSettings"))
-        return ClaudeCodeSettings(schema, agent, allowed_channel_plugins, allowed_http_hook_urls, allowed_mcp_servers, allow_managed_hooks_only, allow_managed_mcp_servers_only, allow_managed_permission_rules_only, always_thinking_enabled, api_key_helper, attribution, auto_memory_directory, auto_memory_enabled, auto_mode, auto_updates_channel, available_models, aws_auth_refresh, aws_credential_export, blocked_marketplaces, channels_enabled, claude_md_excludes, cleanup_period_days, company_announcements, default_shell, denied_mcp_servers, disable_all_hooks, disable_deep_link_registration, disabled_mcpjson_servers, disable_skill_shell_execution, effort_level, enable_all_project_mcp_servers, enabled_mcpjson_servers, enabled_plugins, env, extra_known_marketplaces, fast_mode, fast_mode_per_session_opt_in, feedback_survey_rate, file_suggestion, force_login_method, force_login_org_uuid, force_remote_settings_refresh, hooks, http_hook_allowed_env_vars, include_co_authored_by, include_git_instructions, language, minimum_version, model, model_overrides, otel_headers_helper, output_style, permissions, plans_directory, plugin_configs, plugin_trust_message, prefers_reduced_motion, pr_url_template, respect_gitignore, sandbox, show_clear_context_on_plan_accept, show_thinking_summaries, show_turn_duration, skip_dangerous_mode_permission_prompt, skipped_marketplaces, skipped_plugins, skip_web_fetch_preflight, spinner_tips_enabled, spinner_tips_override, spinner_verbs, status_line, strict_known_marketplaces, strict_plugin_only_customization, teammate_mode, terminal_progress_bar_enabled, tui, use_auto_mode_during_plan, view_mode, voice_enabled, worktree, wsl_inherits_windows_settings)
+        return ClaudeCodeSettings(schema, agent, allowed_channel_plugins, allowed_http_hook_urls, allowed_mcp_servers, allow_managed_hooks_only, allow_managed_mcp_servers_only, allow_managed_permission_rules_only, always_thinking_enabled, api_key_helper, attribution, auto_memory_directory, auto_memory_enabled, auto_mode, auto_updates_channel, available_models, aws_auth_refresh, aws_credential_export, blocked_marketplaces, channels_enabled, claude_md_excludes, cleanup_period_days, company_announcements, default_shell, denied_mcp_servers, disable_all_hooks, disable_deep_link_registration, disabled_mcpjson_servers, disable_skill_shell_execution, effort_level, enable_all_project_mcp_servers, enabled_mcpjson_servers, enabled_plugins, env, extra_known_marketplaces, fast_mode, fast_mode_per_session_opt_in, feedback_survey_rate, file_suggestion, force_login_method, force_login_org_uuid, force_remote_settings_refresh, hooks, http_hook_allowed_env_vars, include_co_authored_by, include_git_instructions, language, minimum_version, model, model_overrides, otel_headers_helper, output_style, parent_settings_behavior, permissions, plans_directory, plugin_configs, plugin_trust_message, prefers_reduced_motion, pr_url_template, respect_gitignore, sandbox, show_clear_context_on_plan_accept, show_thinking_summaries, show_turn_duration, skill_overrides, skip_dangerous_mode_permission_prompt, skipped_marketplaces, skipped_plugins, skip_web_fetch_preflight, spinner_tips_enabled, spinner_tips_override, spinner_verbs, status_line, strict_known_marketplaces, strict_plugin_only_customization, subagent_status_line, teammate_mode, terminal_progress_bar_enabled, tui, use_auto_mode_during_plan, view_mode, voice_enabled, worktree, wsl_inherits_windows_settings)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -3627,6 +3811,8 @@ class ClaudeCodeSettings:
             result["otelHeadersHelper"] = from_union([from_str, from_none], self.otel_headers_helper)
         if self.output_style is not None:
             result["outputStyle"] = from_union([from_str, from_none], self.output_style)
+        if self.parent_settings_behavior is not None:
+            result["parentSettingsBehavior"] = from_union([lambda x: to_enum(ParentSettingsBehavior, x), from_none], self.parent_settings_behavior)
         if self.permissions is not None:
             result["permissions"] = from_union([lambda x: to_class(Permissions, x), from_none], self.permissions)
         if self.plans_directory is not None:
@@ -3649,6 +3835,8 @@ class ClaudeCodeSettings:
             result["showThinkingSummaries"] = from_union([from_bool, from_none], self.show_thinking_summaries)
         if self.show_turn_duration is not None:
             result["showTurnDuration"] = from_union([from_bool, from_none], self.show_turn_duration)
+        if self.skill_overrides is not None:
+            result["skillOverrides"] = from_union([lambda x: from_dict(lambda x: to_enum(SkillOverride, x), x), from_none], self.skill_overrides)
         if self.skip_dangerous_mode_permission_prompt is not None:
             result["skipDangerousModePermissionPrompt"] = from_union([from_bool, from_none], self.skip_dangerous_mode_permission_prompt)
         if self.skipped_marketplaces is not None:
@@ -3669,6 +3857,8 @@ class ClaudeCodeSettings:
             result["strictKnownMarketplaces"] = from_union([lambda x: from_list(lambda x: to_class(StrictKnownMarketplace, x), x), from_none], self.strict_known_marketplaces)
         if self.strict_plugin_only_customization is not None:
             result["strictPluginOnlyCustomization"] = from_union([from_bool, lambda x: from_list(lambda x: to_enum(StrictPluginOnlyCustomizationElement, x), x), from_none], self.strict_plugin_only_customization)
+        if self.subagent_status_line is not None:
+            result["subagentStatusLine"] = from_union([lambda x: to_class(SubagentStatusLine, x), from_none], self.subagent_status_line)
         if self.teammate_mode is not None:
             result["teammateMode"] = from_union([lambda x: to_enum(TeammateMode, x), from_none], self.teammate_mode)
         if self.terminal_progress_bar_enabled is not None:

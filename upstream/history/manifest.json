@@ -4,6 +4,11 @@
       "version": "2.1.138",
       "hash": "d2d192a072ef53dbb8419b502d60bdc8364e8e43f5129ac93105e6677e274a81",
       "fetchedAt": "2026-05-10T15:03:02.802Z"
+    },
+    {
+      "version": "2.1.199",
+      "hash": "22ffdfc7013b40b9fefdfd9df4af889a096ed0c5bf23607484526f291439b8f8",
+      "fetchedAt": "2026-07-03T07:09:24.686Z"
     }
   ],
   "plugin-manifest.json": [

@@ -621,9 +621,10 @@ type ClaudeCodeSettings struct {
 	// repository .claude/settings.json to ensure team members have required plugin sources. See                                    
 	// https://code.claude.com/docs/en/plugin-marketplaces                                                                          
 	ExtraKnownMarketplaces                                                                      map[string]ExtraKnownMarketplace    `json:"extraKnownMarketplaces,omitempty"`
-	// Enable fast mode for Opus 4.6 (research preview). Fast mode uses the same model with 2.5x                                    
-	// faster output at higher per-token cost. Requires extra usage enabled. Alternatively,                                         
-	// toggle with /fast command. See https://code.claude.com/docs/en/fast-mode                                                     
+	// Enable fast mode, which uses Claude Opus 4.7 by default for 2.5x faster output at higher                                     
+	// per-token cost. Requires extra usage enabled. Toggle with /fast command. Set                                                 
+	// CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1 to pin fast mode to Opus 4.6. See                                                  
+	// https://code.claude.com/docs/en/fast-mode                                                                                    
 	FastMode                                                                                    *bool                               `json:"fastMode,omitempty"`
 	// Require per-session opt-in for fast mode. When true, fast mode does not persist across                                       
 	// sessions and users must enable it with /fast each session. Useful for controlling costs.                                     
@@ -686,6 +687,10 @@ type ClaudeCodeSettings struct {
 	// Learning. Custom styles can be added in ~/.claude/output-styles/ or                                                          
 	// .claude/output-styles/. See https://code.claude.com/docs/en/output-styles                                                    
 	OutputStyle                                                                                 *string                             `json:"outputStyle,omitempty"`
+	// (Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with                                      
+	// inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge                                    
+	// arrays and objects. See https://code.claude.com/docs/en/server-managed-settings                                              
+	ParentSettingsBehavior                                                                      *ParentSettingsBehavior             `json:"parentSettingsBehavior,omitempty"`
 	// Tool usage permissions configuration.                                                                                        
 	// See https://code.claude.com/docs/en/permissions and                                                                          
 	// https://code.claude.com/docs/en/settings#permission-settings                                                                 
@@ -724,6 +729,12 @@ type ClaudeCodeSettings struct {
 	// Show turn duration messages after responses (e.g., "Cooked for 1m 6s"). Set to false to                                      
 	// hide these messages (default: true)                                                                                          
 	ShowTurnDuration                                                                            *bool                               `json:"showTurnDuration,omitempty"`
+	// Per-skill visibility overrides. Controls whether skills appear to Claude and in the /                                        
+	// picker. Values: 'on' (name and description shown, default), 'name-only' (name only),                                         
+	// 'user-invocable-only' (hidden from Claude, visible in /), 'off' (hidden everywhere).                                         
+	// Plugin skills are not affected by this setting. See                                                                          
+	// https://code.claude.com/docs/en/skills#override-skill-visibility-from-settings                                               
+	SkillOverrides                                                                              map[string]SkillOverride            `json:"skillOverrides,omitempty"`
 	// Whether the user has accepted the bypass permissions mode dialog. Typically managed by                                       
 	// the CLI rather than set by hand.                                                                                             
 	SkipDangerousModePermissionPrompt                                                           *bool                               `json:"skipDangerousModePermissionPrompt,omitempty"`
@@ -753,6 +764,9 @@ type ClaudeCodeSettings struct {
 	// form locks specific surfaces (e.g., ["skills", "hooks"]); true locks all four; false is                                      
 	// an explicit no-op. See https://code.claude.com/docs/en/plugins-reference                                                     
 	StrictPluginOnlyCustomization                                                               *StrictPluginOnlyCustomizationUnion `json:"strictPluginOnlyCustomization"`
+	// Status line configuration for subagent sessions. See                                                                         
+	// https://code.claude.com/docs/en/statusline#subagent-status-lines                                                             
+	SubagentStatusLine                                                                          *SubagentStatusLine                 `json:"subagentStatusLine,omitempty"`
 	// How agent team teammates display: "auto" picks split panes in tmux or iTerm2, in-process                                     
 	// otherwise. Agent teams are experimental and disabled by default. Enable them by adding                                       
 	// CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS to your settings.json or environment. See                                               
@@ -779,7 +793,7 @@ type ClaudeCodeSettings struct {
 	VoiceEnabled                                                                                *bool                               `json:"voiceEnabled,omitempty"`
 	// Configuration for --worktree sessions. See                                                                                   
 	// https://code.claude.com/docs/en/settings#worktree-settings                                                                   
-	Worktree                                                                                    *WorktreeClass                      `json:"worktree,omitempty"`
+	Worktree                                                                                    *Worktree                           `json:"worktree,omitempty"`
 	// (Windows managed settings only) When true, Claude Code on WSL reads managed settings from                                    
 	// the Windows policy chain in addition to /etc/claude-code, with Windows sources taking                                        
 	// priority. Only honored when set in the HKLM registry key or C:\Program                                                       
@@ -823,6 +837,11 @@ type AutoMode struct {
 	// environment context entirely unless the literal string "$defaults" is included as an              
 	// entry, which splices the built-in defaults in at that position.                                   
 	Environment                                                                                 []string `json:"environment,omitempty"`
+	// Rules for the auto mode classifier hard-deny section. Hard-deny rules block                       
+	// unconditionally regardless of user intent. Replaces the built-in hard-deny rules entirely         
+	// unless the literal string "$defaults" is included as an entry, which splices the built-in         
+	// defaults in at that position. See https://code.claude.com/docs/en/permissions                     
+	HardDeny                                                                                    []string `json:"hard_deny,omitempty"`
 	// Rules for the auto mode classifier soft-deny section. Replaces the built-in soft-deny             
 	// rules entirely unless the literal string "$defaults" is included as an entry, which               
 	// splices the built-in defaults in at that position.                                                
@@ -1042,6 +1061,10 @@ type ConfigChangeElement struct {
 // MCP tool hook. Call a tool on an already-connected MCP server. See
 // https://code.claude.com/docs/en/hooks#mcp-tool-hook-fields
 type HookElement struct {
+	// Argument list for exec form. When present, spawns the command directly without shell                            
+	// interpretation — each element is passed as-is, so path placeholders never need quoting.                         
+	// See https://code.claude.com/docs/en/hooks#command-hook-fields                                                   
+	Args                                                                                        []string               `json:"args,omitempty"`
 	// Run this hook asynchronously without blocking Claude Code                                                       
 	Async                                                                                       *bool                  `json:"async,omitempty"`
 	// When true, the hook runs in the background and wakes the model when it exits with code 2.                       
@@ -1072,6 +1095,10 @@ type HookElement struct {
 	Timeout                                                                                     *float64               `json:"timeout,omitempty"`
 	// Hook type                                                                                                       
 	Type                                                                                        HookType               `json:"type"`
+	// When the prompt returns ok: false, feed the reason back to Claude and continue the turn                         
+	// instead of stopping. Implemented as continue: true on the resulting decision: "block".                          
+	// See https://code.claude.com/docs/en/hooks#prompt-hook-configuration                                             
+	ContinueOnBlock                                                                             *bool                  `json:"continueOnBlock,omitempty"`
 	// Model to use for evaluation. Defaults to a fast model                                                           
 	Model                                                                                       *string                `json:"model,omitempty"`
 	// Prompt to evaluate with LLM. Use $ARGUMENTS placeholder for hook input JSON.                                    
@@ -1149,8 +1176,16 @@ type Sandbox struct {
 	// applies to commands that will run sandboxed. See                                                            
 	// https://code.claude.com/docs/en/sandboxing#sandbox-modes                                                    
 	AutoAllowBashIfSandboxed                                                                   *bool               `json:"autoAllowBashIfSandboxed,omitempty"`
+	// (Managed setting only) Path to custom bubblewrap (bwrap) binary for Linux/WSL sandbox.                      
+	// Overrides default. See https://code.claude.com/docs/en/server-managed-settings                              
+	BwrapPath                                                                                  *string             `json:"bwrapPath,omitempty"`
 	// Enable sandboxed bash. See https://code.claude.com/docs/en/sandboxing#enable-sandboxing                     
 	Enabled                                                                                    *bool               `json:"enabled,omitempty"`
+	// Limit the entire sandbox configuration to the listed platforms. On platforms not in the                     
+	// list the sandbox config is inert: no sandbox, no auto-allow, no startup warning, and no                     
+	// failIfUnavailable exit. When omitted, all supported platforms are included. Only honored                    
+	// from managed (policy) settings.                                                                             
+	EnabledPlatforms                                                                           []EnabledPlatform   `json:"enabledPlatforms,omitempty"`
 	// Enable weaker sandbox mode for unprivileged docker environments where --proc mounting                       
 	// fails. This significantly reduces the strength of the sandbox and should only be used                       
 	// when this risk is acceptable. Default: false (secure). See                                                  
@@ -1165,6 +1200,10 @@ type Sandbox struct {
 	// Commands that should never run in the sandbox (e.g., ["git", "docker"]). See                                
 	// https://code.claude.com/docs/en/sandboxing#configure-sandboxing                                             
 	ExcludedCommands                                                                           []string            `json:"excludedCommands,omitempty"`
+	// When true, make sandbox startup a hard failure if required sandbox dependencies are                         
+	// missing. Default: false (sandbox is skipped with a warning). See                                            
+	// https://code.claude.com/docs/en/sandboxing#enable-sandboxing                                                
+	FailIfUnavailable                                                                          *bool               `json:"failIfUnavailable,omitempty"`
 	// Filesystem access control for sandboxed commands. See                                                       
 	// https://code.claude.com/docs/en/sandboxing#filesystem-isolation                                             
 	Filesystem                                                                                 *Filesystem         `json:"filesystem,omitempty"`
@@ -1177,6 +1216,9 @@ type Sandbox struct {
 	// Custom ripgrep configuration for Claude Code's bundled ripgrep support. Overrides the                       
 	// bundled binary and arguments.                                                                               
 	Ripgrep                                                                                    *Ripgrep            `json:"ripgrep,omitempty"`
+	// (Managed setting only) Path to custom socat binary for Linux/WSL network proxying.                          
+	// Overrides default. See https://code.claude.com/docs/en/server-managed-settings                              
+	SocatPath                                                                                  *string             `json:"socatPath,omitempty"`
 }
 
 // Filesystem access control for sandboxed commands. See
@@ -1275,6 +1317,10 @@ type StatusLine struct {
 	// costs, git status, etc.) by reading JSON data from stdin and writing output to stdout.                      
 	// See https://code.claude.com/docs/en/statusline                                                              
 	Command                                                                                     string             `json:"command"`
+	// Set to true when your status line script renders the vim mode indicator itself, to                          
+	// suppress the built-in vim mode display. See                                                                 
+	// https://code.claude.com/docs/en/statusline#manually-configure-a-status-line                                 
+	HideVimModeIndicator                                                                        *bool              `json:"hideVimModeIndicator,omitempty"`
 	// Optional number of extra horizontal spacing characters added to the status line content;                    
 	// defaults to 0.                                                                                              
 	Padding                                                                                     *float64           `json:"padding,omitempty"`
@@ -1315,13 +1361,31 @@ type StrictKnownMarketplace struct {
 	PathPattern                                                              *string                  `json:"pathPattern,omitempty"`
 }
 
+// Status line configuration for subagent sessions. See
+// https://code.claude.com/docs/en/statusline#subagent-status-lines
+type SubagentStatusLine struct {
+	// Shell command to run for the subagent status line                   
+	Command                                             string             `json:"command"`
+	// Must be "command"                                                   
+	Type                                                FileSuggestionType `json:"type"`
+}
+
 // Configuration for --worktree sessions. See
 // https://code.claude.com/docs/en/settings#worktree-settings
-type WorktreeClass struct {
-	// Directories to check out in each worktree via git sparse-checkout (cone mode). Only the         
-	// listed paths are written to disk, which is faster in large monorepos. See                       
-	// https://code.claude.com/docs/en/settings#worktree-settings                                      
-	SparsePaths                                                                               []string `json:"sparsePaths,omitempty"`
+type Worktree struct {
+	// Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:              
+	// fresh. Set to 'head' to preserve unpushed commits in new worktrees. See                               
+	// https://code.claude.com/docs/en/settings#worktree-settings                                            
+	BaseRef                                                                                     *BaseRef     `json:"baseRef,omitempty"`
+	// Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout                 
+	// until EnterWorktree is called; "none" lets background jobs edit the working copy directly             
+	// without EnterWorktree, for repos where worktrees are impractical. See                                 
+	// https://code.claude.com/docs/en/settings#worktree-settings                                            
+	BgIsolation                                                                                 *BgIsolation `json:"bgIsolation,omitempty"`
+	// Directories to check out in each worktree via git sparse-checkout (cone mode). Only the               
+	// listed paths are written to disk, which is faster in large monorepos. See                             
+	// https://code.claude.com/docs/en/settings#worktree-settings                                            
+	SparsePaths                                                                                 []string     `json:"sparsePaths,omitempty"`
 }
 
 // YAML frontmatter for subagent .md files. Source:
@@ -1603,6 +1667,16 @@ const (
 	Console  ForceLoginMethod = "console"
 )
 
+// (Admin/managed settings only) Controls how SDK managedSettings (parent tier) merge with
+// inherited settings. 'first-wins': first non-empty value applies (default). 'merge': merge
+// arrays and objects. See https://code.claude.com/docs/en/server-managed-settings
+type ParentSettingsBehavior string
+
+const (
+	FirstWINS ParentSettingsBehavior = "first-wins"
+	Merge     ParentSettingsBehavior = "merge"
+)
+
 // Default permission mode.
 // "default": prompts on first use.
 // "acceptEdits": auto-accepts file edits.
@@ -1624,6 +1698,24 @@ const (
 	DefaultModeDontAsk           DefaultMode = "dontAsk"
 	DefaultModePlan              DefaultMode = "plan"
 	Delegate                     DefaultMode = "delegate"
+)
+
+type EnabledPlatform string
+
+const (
+	Linux   EnabledPlatform = "linux"
+	Macos   EnabledPlatform = "macos"
+	Windows EnabledPlatform = "windows"
+	Wsl     EnabledPlatform = "wsl"
+)
+
+type SkillOverride string
+
+const (
+	NameOnly          SkillOverride = "name-only"
+	Off               SkillOverride = "off"
+	On                SkillOverride = "on"
+	UserInvocableOnly SkillOverride = "user-invocable-only"
 )
 
 // How to combine custom verbs with default spinner verbs: 'append' adds custom verbs to the
@@ -1677,6 +1769,27 @@ const (
 	ViewModeDefault ViewMode = "default"
 )
 
+// Whether to branch worktrees from origin/<default> (fresh) or local HEAD (head). Default:
+// fresh. Set to 'head' to preserve unpushed commits in new worktrees. See
+// https://code.claude.com/docs/en/settings#worktree-settings
+type BaseRef string
+
+const (
+	Fresh BaseRef = "fresh"
+	Head  BaseRef = "head"
+)
+
+// Isolation mode for background sessions. "worktree" blocks Edit/Write in main checkout
+// until EnterWorktree is called; "none" lets background jobs edit the working copy directly
+// without EnterWorktree, for repos where worktrees are impractical. See
+// https://code.claude.com/docs/en/settings#worktree-settings
+type BgIsolation string
+
+const (
+	BgIsolationWorktree BgIsolation = "worktree"
+	None                BgIsolation = "none"
+)
+
 // Display color for the subagent in the task list and transcript.
 type Color string
 
@@ -1695,7 +1808,7 @@ const (
 type Isolation string
 
 const (
-	Worktree Isolation = "worktree"
+	IsolationWorktree Isolation = "worktree"
 )
 
 // Persistent memory scope. Enables cross-session learning.
